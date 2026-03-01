@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { gsap } from 'gsap';
+import { gsap } from '../lib/gsap.js';
 
 const ChromaGrid = ({ items, renderItem, className = '', radius = 300, damping = 0.45, fadeOut = 0.6, ease = 'power3.out' }) => {
     const rootRef = useRef(null);

@@ -1,5 +1,5 @@
 import { Zap, DollarSign, AlertCircle, Clock, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import CountUpModule from 'react-countup';
 import Tooltip from '../components/Tooltip';
 import { clsx } from "clsx";
@@ -12,6 +12,7 @@ import ChromaGrid from "../components/ChromaGrid";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { getWorkflowMetrics } from "../utils/mock-data";
 import { useSettings } from "../context/SettingsContext";
+import { gsap, ScrollTrigger } from "../lib/gsap.js";
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -62,6 +63,7 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", changeText,
 export default function Dashboard() {
     const { data, isLoading, isRefetching, refetch } = useDashboardData(getWorkflowMetrics, '/v1/executions');
     const { dataSource } = useSettings();
+    const rootRef = useRef(null);
 
     // Setup 8 second polling interval
     useEffect(() => {
@@ -75,6 +77,36 @@ export default function Dashboard() {
 
         return () => clearInterval(intervalId);
     }, [isLoading, dataSource, refetch]);
+
+    useLayoutEffect(() => {
+        if (!rootRef.current) return;
+        const ctx = gsap.context(() => {
+            ScrollTrigger.batch("[data-gsap='reveal']", {
+                start: "top 85%",
+                onEnter: (elements) =>
+                    gsap.fromTo(
+                        elements,
+                        { y: 18, opacity: 0 },
+                        { y: 0, opacity: 1, duration: 0.6, ease: "power2.out", stagger: 0.06, overwrite: true }
+                    ),
+                onLeaveBack: (elements) => gsap.set(elements, { opacity: 0, y: 18 })
+            });
+
+            gsap.utils.toArray("[data-gsap='parallax']").forEach((el) => {
+                gsap.to(el, {
+                    yPercent: -12,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 0.6
+                    }
+                });
+            });
+        }, rootRef);
+        return () => ctx.revert();
+    }, []);
 
     const metrics = [
         {
@@ -123,10 +155,10 @@ export default function Dashboard() {
     ];
 
     return (
-        <div className="space-y-6 relative">
+        <div ref={rootRef} className="space-y-6 relative">
             {/* Background Sync Indicator */}
             {isRefetching && (
-                <div className="absolute top-0 right-0 -mt-10 flex items-center text-xs font-semibold text-primary/70 bg-primary/10 px-3 py-1.5 rounded-full z-20">
+                <div data-gsap="parallax" className="absolute top-0 right-0 -mt-10 flex items-center text-xs font-semibold text-primary/70 bg-primary/10 px-3 py-1.5 rounded-full z-20">
                     <RefreshCw size={12} className="mr-2 animate-spin" />
                     LIVE SYNC
                 </div>
@@ -142,7 +174,9 @@ export default function Dashboard() {
                         className="group relative h-full w-full"
                         style={{ '--spotlight-color': 'rgba(255,255,255,0.08)' }}
                     >
-                        <MetricCard {...metric} />
+                        <div data-gsap="reveal">
+                            <MetricCard {...metric} />
+                        </div>
                         <div
                             className="absolute inset-0 pointer-events-none transition-opacity duration-500 z-20 opacity-0 group-hover:opacity-100 rounded-xl"
                             style={{
@@ -154,7 +188,7 @@ export default function Dashboard() {
             />
 
             {/* Charts Section */}
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div data-gsap="reveal" className="flex flex-col lg:flex-row gap-6">
                 <ExecutionVolumeChart data={data?.volumeData} isLoading={isLoading} />
 
                 {/* Right Side Sections */}
@@ -165,7 +199,9 @@ export default function Dashboard() {
             </div>
 
             {/* Bottom Table Section */}
-            <RecentActivityTable />
+            <div data-gsap="reveal">
+                <RecentActivityTable />
+            </div>
         </div>
     );
 }

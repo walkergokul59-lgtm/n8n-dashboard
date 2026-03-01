@@ -1,10 +1,23 @@
+import { useRef, useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import LightPillar from "./LightPillar";
+import { ScrollTrigger } from "../lib/gsap.js";
+import { useSmoothScroll } from "../hooks/useSmoothScroll";
 
 export function Layout() {
     const location = useLocation();
+    const scrollerRef = useRef(null);
+
+    useSmoothScroll(scrollerRef, { duration: 0.8 });
+
+    useLayoutEffect(() => {
+        if (!scrollerRef.current) return;
+        ScrollTrigger.defaults({ scroller: scrollerRef.current });
+        ScrollTrigger.refresh();
+    }, []);
+
     return (
         <div className="relative flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
             <div className="pointer-events-none absolute inset-0 z-0">
@@ -25,7 +38,7 @@ export function Layout() {
             <Sidebar />
             <div className="relative z-10 flex min-w-0 flex-1 flex-col">
                 <Header />
-                <main className="flex-1 overflow-auto p-8">
+                <main ref={scrollerRef} className="flex-1 overflow-auto p-8">
                     <div key={location.pathname} className="page-transition relative z-10 mx-auto h-full max-w-7xl">
                         <Outlet />
                     </div>

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SettingsProvider } from "./context/SettingsContext";
 import { Layout } from "./components/Layout";
@@ -8,6 +8,7 @@ import InvoiceRuns from "./pages/InvoiceRuns";
 import OrderSync from "./pages/OrderSync";
 import SmsOutreach from "./pages/SmsOutreach";
 import Settings from "./pages/Settings";
+import Preloader from "./components/Preloader";
 
 // Dummy pages to showcase routing and header updates
 const PlaceholderPage = ({ title }) => (
@@ -55,9 +56,35 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
+  const [isBootReady, setIsBootReady] = useState(false);
+  const [showPreloader, setShowPreloader] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
+    const fontsReady = document.fonts?.ready?.catch(() => undefined) ?? Promise.resolve();
+
+    Promise.all([minDelay, fontsReady]).then(() => {
+      if (!cancelled) setIsBootReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <SettingsProvider>
       <ErrorBoundary>
+        {showPreloader && (
+          <Preloader
+            ready={isBootReady}
+            onDone={() => {
+              setShowPreloader(false);
+            }}
+          />
+        )}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Layout />}>
