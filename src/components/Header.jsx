@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom";
 import { gsap } from "../lib/gsap.js";
 
 const ROUTE_LABELS = {
-    "/": { title: "Dashboard", subtitle: "Overview of your workflows and metrics" },
+    "/": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
+    "/dashboard": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
     "/agent-logs": { title: "AI Agent Logs", subtitle: "Monitor AI agent executions and output logs" },
     "/invoice-runs": { title: "Invoice Runs", subtitle: "Track automated invoice generation workflows" },
     "/order-sync": { title: "Order Sync", subtitle: "Manage e-commerce order synchronization" },
