@@ -67,8 +67,8 @@ export default function Dashboard() {
     const sse = useDashboardOverviewSse(dataSource === 'n8n-server');
     const http = useDashboardData(getWorkflowMetrics, '/dashboard/overview');
 
-    const data = dataSource === 'n8n-server' ? sse.data : http.data;
-    const isLoading = dataSource === 'n8n-server' ? !sse.data : http.isLoading;
+    const data = dataSource === 'n8n-server' ? (sse.data || http.data) : http.data;
+    const isLoading = dataSource === 'n8n-server' ? (!sse.data && http.isLoading) : http.isLoading;
     const isRefetching = dataSource === 'n8n-server' ? sse.isConnected : http.isRefetching;
     const refetch = http.refetch;
     const rootRef = useRef(null);
@@ -78,13 +78,13 @@ export default function Dashboard() {
         const intervalId = setInterval(() => {
             // Only refetch if we aren't currently loading or already in an error state we want the user to see 
             // and we aren't in static mockup mode which doesn't need polling
-            if (!isLoading && dataSource !== 'mockup' && dataSource !== 'n8n-server') {
+            if (!isLoading && dataSource !== 'mockup' && !(dataSource === 'n8n-server' && sse.isConnected)) {
                 refetch();
             }
         }, 8000);
 
         return () => clearInterval(intervalId);
-    }, [isLoading, dataSource, refetch]);
+    }, [isLoading, dataSource, refetch, sse.isConnected]);
 
     useLayoutEffect(() => {
         if (!rootRef.current) return;

@@ -9,7 +9,16 @@ export function useDashboardOverviewSse(enabled) {
     if (!enabled) return;
 
     let closed = false;
-    const es = new EventSource("/api/dashboard/stream?intervalMs=3000");
+    let es;
+    try {
+      es = new EventSource("/api/dashboard/stream?intervalMs=3000");
+    } catch (err) {
+      setTimeout(() => {
+        setError(err);
+        setIsConnected(false);
+      }, 0);
+      return;
+    }
 
     const onOverview = (e) => {
       if (closed) return;
@@ -44,10 +53,9 @@ export function useDashboardOverviewSse(enabled) {
 
     return () => {
       closed = true;
-      es.close();
+      es?.close?.();
     };
   }, [enabled]);
 
   return { data, isConnected, error };
 }
-
