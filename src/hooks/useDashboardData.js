@@ -60,11 +60,10 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
         }
     }, [fetcherFn, dataSource, endpointPath, apiFetch]);
 
-    // Initial mount fetch
+    // Initial mount fetch & refetch when dependencies change
     useEffect(() => {
         fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchData]);
 
     // Provide a manual refetch wrapper for the consumer
     const refetch = useCallback(() => {
