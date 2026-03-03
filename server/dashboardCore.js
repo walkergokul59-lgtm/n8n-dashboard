@@ -59,7 +59,7 @@ function buildHourlySeries(now, executions, hours = 24) {
   return buckets;
 }
 
-async function collectExecutionsWindow(n8n, { maxPages = 10, pageSize = 100, minSince }) {
+async function collectExecutionsWindow(n8n, { maxPages = 5, pageSize = 100, minSince }) {
   const all = [];
   let cursor = undefined;
   for (let page = 0; page < maxPages; page += 1) {
@@ -100,35 +100,39 @@ function dedupeExecutionsById(executions) {
 }
 
 async function collectExecutionsForWorkflowIds(n8n, workflowIds, { pageSize = 100, maxPagesPerWorkflow = 5, minSince = null, maxCollected = Infinity } = {}) {
-  const all = [];
   const workflowIdList = [...(workflowIds || [])].map((id) => String(id)).filter(Boolean);
 
-  for (const workflowId of workflowIdList) {
-    let cursor = undefined;
-    for (let page = 0; page < maxPagesPerWorkflow; page += 1) {
-      const { items, cursor: nextCursor } = await n8n.listExecutions({
-        limit: pageSize,
-        includeData: false,
-        cursor,
-        workflowId,
-      });
+  // Fetch all workflows in parallel instead of sequentially
+  const perWorkflow = await Promise.all(
+    workflowIdList.map(async (workflowId) => {
+      const items = [];
+      let cursor = undefined;
+      for (let page = 0; page < maxPagesPerWorkflow; page += 1) {
+        const { items: batch, cursor: nextCursor } = await n8n.listExecutions({
+          limit: pageSize,
+          includeData: false,
+          cursor,
+          workflowId,
+        });
 
-      if (!Array.isArray(items) || items.length === 0) break;
-      all.push(...items);
-      if (all.length >= maxCollected) break;
+        if (!Array.isArray(batch) || batch.length === 0) break;
+        items.push(...batch);
+        if (items.length >= maxCollected) break;
 
-      if (minSince) {
-        const timestamps = items.map(pickTimestamp).filter(Boolean);
-        const oldest = timestamps.length ? new Date(Math.min(...timestamps.map((d) => d.getTime()))) : null;
-        if (oldest && oldest.getTime() < minSince.getTime()) break;
+        if (minSince) {
+          const timestamps = batch.map(pickTimestamp).filter(Boolean);
+          const oldest = timestamps.length ? new Date(Math.min(...timestamps.map((d) => d.getTime()))) : null;
+          if (oldest && oldest.getTime() < minSince.getTime()) break;
+        }
+
+        if (!nextCursor) break;
+        cursor = nextCursor;
       }
+      return items;
+    })
+  );
 
-      if (!nextCursor) break;
-      cursor = nextCursor;
-    }
-    if (all.length >= maxCollected) break;
-  }
-
+  const all = perWorkflow.flat();
   const deduped = dedupeExecutionsById(all);
   return filterExecutions(deduped, new Set(workflowIdList));
 }
@@ -158,12 +162,12 @@ export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) 
   if (allowedWorkflowIds instanceof Set) {
     scopedExecutions = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
       pageSize: 100,
-      maxPagesPerWorkflow: 6,
+      maxPagesPerWorkflow: 2,
       minSince: since48h,
-      maxCollected: 2000,
+      maxCollected: 400,
     });
   } else {
-    const rawExecutions = await collectExecutionsWindow(n8n, { minSince: since48h });
+    const rawExecutions = await collectExecutionsWindow(n8n, { maxPages: 5, minSince: since48h });
     scopedExecutions = filterExecutions(rawExecutions, allowedWorkflowIds);
   }
 
@@ -224,12 +228,12 @@ export async function listRecentExecutions(n8n, limit = 25, access = { allowedWo
   } else if (allowedWorkflowIds instanceof Set) {
     collected = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
       pageSize: Math.max(100, desired),
-      maxPagesPerWorkflow: 8,
-      maxCollected: Math.max(desired * 4, 200),
+      maxPagesPerWorkflow: 3,
+      maxCollected: Math.max(desired * 2, 50),
     });
   } else {
     const pageSize = Math.max(100, desired);
-    const maxPages = 30;
+    const maxPages = 10;
     let cursor = undefined;
     for (let page = 0; page < maxPages; page += 1) {
       const { items, cursor: nextCursor } = await n8n.listExecutions({

@@ -45,40 +45,49 @@ export class N8nClient {
     this.env = env;
     this.baseApiUrl = joinUrl(env.n8nBaseUrl, env.n8nApiBasePath);
     this.authHeaders = buildAuthHeaders(env);
+    this._workingExecutionQuery = null; // Cache the working query variant
   }
 
   async requestJson(path, { method = 'GET', query, headers, body, signal } = {}) {
     const url = withQuery(joinUrl(this.baseApiUrl, path), query);
 
-    const res = await fetch(url, {
-      method,
-      headers: {
-        ...this.authHeaders,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...(headers || {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal,
-    });
+    // Add 8-second timeout if no signal provided
+    const controller = signal ? undefined : new AbortController();
+    const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
 
-    const text = await res.text();
-    const contentType = res.headers.get('content-type') || '';
-    const parsed = contentType.includes('application/json') && text ? JSON.parse(text) : text;
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: {
+          ...this.authHeaders,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(headers || {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: signal || (controller ? controller.signal : undefined),
+      });
 
-    if (!res.ok) {
-      const detail = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
-      const err = new Error(`n8n API ${res.status} ${res.statusText}${detail ? `: ${detail}` : ''}`);
-      err.status = res.status;
-      throw err;
+      const text = await res.text();
+      const contentType = res.headers.get('content-type') || '';
+      const parsed = contentType.includes('application/json') && text ? JSON.parse(text) : text;
+
+      if (!res.ok) {
+        const detail = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
+        const err = new Error(`n8n API ${res.status} ${res.statusText}${detail ? `: ${detail}` : ''}`);
+        err.status = res.status;
+        throw err;
+      }
+
+      return parsed;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-
-    return parsed;
   }
 
   async listExecutions({ limit = 100, status, includeData = false, cursor, workflowId } = {}) {
     // Try the most common params first; fall back if an instance rejects them.
-    const tryQueries = [
+    const fullQueryList = [
       { limit, status, includeData, cursor, workflowId },
       { limit, status, cursor, workflowId },
       { limit, status, workflowId },
@@ -89,10 +98,25 @@ export class N8nClient {
       { limit },
     ];
 
+    // If we've found a working variant, try it first
+    let tryQueries;
+    if (this._workingExecutionQuery) {
+      tryQueries = [
+        this._workingExecutionQuery,
+        ...fullQueryList.filter(q => JSON.stringify(q) !== JSON.stringify(this._workingExecutionQuery))
+      ];
+    } else {
+      tryQueries = fullQueryList;
+    }
+
     let lastErr = null;
     for (const query of tryQueries) {
       try {
         const payload = await this.requestJson('executions', { query });
+        // Cache this working variant for future calls
+        if (!this._workingExecutionQuery) {
+          this._workingExecutionQuery = query;
+        }
         return {
           items: normalizeListPayload(payload),
           cursor: getPayloadCursor(payload),

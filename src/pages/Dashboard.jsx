@@ -76,17 +76,16 @@ export default function Dashboard() {
     const rootRef = useRef(null);
 
     // Setup 3 second polling interval for real-time updates
+    // Skip polling when SSE is connected (SSE is primary when active)
     useEffect(() => {
         const intervalId = setInterval(() => {
-            // Always refetch on n8n-server mode for real-time updates
-            // Skip polling only for static mockup mode which doesn't need it
-            if (!isLoading && dataSource !== 'mockup') {
+            if (!isLoading && dataSource !== 'mockup' && !sse.isConnected) {
                 refetch();
             }
         }, 3000);
 
         return () => clearInterval(intervalId);
-    }, [isLoading, dataSource, refetch]);
+    }, [isLoading, dataSource, refetch, sse.isConnected]);
 
     useLayoutEffect(() => {
         if (!rootRef.current) return;
