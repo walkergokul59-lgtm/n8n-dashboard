@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
     const apiFetch = useCallback(async (input, init = {}) => {
         const headers = new Headers(init.headers || {});
         if (token) headers.set('Authorization', `Bearer ${token}`);
-        return fetch(input, { ...init, headers });
+        return fetch(input, { ...init, headers, cache: 'no-store' });
     }, [token]);
 
     const logout = useCallback(() => {
@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify({ email, password }),
+            cache: 'no-store',
         });
 
         if (!response.ok) {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }) {
             try {
                 const res = await fetch('/api/auth/me', {
                     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                    cache: 'no-store',
                 });
                 if (!res.ok) throw new Error('Session expired');
                 const payload = await res.json();

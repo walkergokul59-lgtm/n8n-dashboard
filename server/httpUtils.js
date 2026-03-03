@@ -1,5 +1,6 @@
 export function sendJson(res, status, payload) {
   res.statusCode = status;
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(payload));
 }
@@ -19,4 +20,3 @@ export function getQueryParam(reqUrl, key) {
   const url = new URL(reqUrl || '/', 'http://localhost');
   return url.searchParams.get(key);
 }
-

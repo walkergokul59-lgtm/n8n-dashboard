@@ -1,0 +1,19 @@
+## Dashboard server -> n8n connection
+# Base URL of your n8n instance (no trailing slash)
+N8N_BASE_URL=http://3.27.1.126:5678/
+
+# API base path (leave as default unless your instance differs)
+N8N_API_BASE_PATH=/api/v1
+
+# Your n8n API token (DO NOT COMMIT real tokens)
+N8N_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMzg2NmY0ZS1kNTVhLTRiZmQtYmQ5Mi0zYjQxYjYxZGYxNjgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiN2NkOTY0MmMtOWMwMS00NTY5LThkYTktZjdkNmZmMzU4YWJlIiwiaWF0IjoxNzcyNTA4NDgxLCJleHAiOjE3ODAyMDAwMDB9.rzYNtmuWDvetu8Doy8AfyvWN1zivDY5UKGVjvT5pubI
+
+# Auth mode:
+# - bearer: Authorization: Bearer <token>
+# - header: <N8N_AUTH_HEADER>: <token>
+N8N_AUTH_TYPE=header
+N8N_AUTH_HEADER=X-N8N-API-KEY
+
+# Port for this dashboard server
+PORT=5173
+

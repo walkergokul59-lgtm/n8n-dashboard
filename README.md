@@ -47,6 +47,16 @@ If `N8N_BASE_URL` points to `http://localhost:5678`, Vercel cannot reach it.
 
 Note: on Vercel, RBAC writes can be ephemeral without external storage. For persistent admin changes, wire `server/rbacStore.js` to a durable database (Postgres/Redis/KV).
 
+### Vercel persistence (required for stable client mappings)
+
+To persist admin workflow assignments across serverless cold starts, set:
+
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+- Optional: `RBAC_KV_KEY` (default: `n8n:rbac`)
+
+Without KV, RBAC may fall back to in-memory state on Vercel and appear to reset.
+
 ## Build / Run (prod)
 
 - `npm run build`

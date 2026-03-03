@@ -10,6 +10,7 @@ const DEFAULT_RBAC = {
 };
 
 const memoryStateKey = '__n8n_dashboard_rbac__';
+const kvStateKey = '__n8n_dashboard_rbac_kv__';
 
 function ensureArray(value) {
   return Array.isArray(value) ? value : [];
@@ -17,6 +18,55 @@ function ensureArray(value) {
 
 function uniqueStrings(values) {
   return [...new Set(ensureArray(values).map((v) => String(v).trim()).filter(Boolean))];
+}
+
+function getKvConfig() {
+  const url = process.env.KV_REST_API_URL?.trim();
+  const token = process.env.KV_REST_API_TOKEN?.trim();
+  const key = process.env.RBAC_KV_KEY?.trim() || 'n8n:rbac';
+  if (!url || !token) return null;
+  return { url, token, key };
+}
+
+async function runKvCommand(args) {
+  const kv = getKvConfig();
+  if (!kv) return { ok: false, result: null };
+
+  const response = await fetch(kv.url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${kv.token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`KV request failed (${response.status}): ${text}`);
+  }
+
+  const payload = await response.json();
+  if (payload?.error) {
+    throw new Error(`KV error: ${payload.error}`);
+  }
+  return { ok: true, result: payload?.result ?? null };
+}
+
+async function readFromKv() {
+  const kv = getKvConfig();
+  if (!kv) return null;
+
+  const { result } = await runKvCommand(['GET', kv.key]);
+  if (!result || typeof result !== 'string') return null;
+  return normalizeRbacConfig(JSON.parse(result));
+}
+
+async function writeToKv(state) {
+  const kv = getKvConfig();
+  if (!kv) return false;
+  await runKvCommand(['SET', kv.key, JSON.stringify(state)]);
+  return true;
 }
 
 export function normalizeRbacConfig(raw) {
@@ -71,7 +121,19 @@ async function writeToDisk(filePath, state) {
 }
 
 export async function readRbacConfig() {
-  if (globalThis[memoryStateKey]) {
+  const kv = getKvConfig();
+  if (kv) {
+    try {
+      const loaded = await readFromKv();
+      if (loaded) {
+        globalThis[memoryStateKey] = loaded;
+        globalThis[kvStateKey] = 'kv';
+        return loaded;
+      }
+    } catch {
+      // Continue with disk/memory fallback.
+    }
+  } else if (globalThis[memoryStateKey]) {
     return normalizeRbacConfig(globalThis[memoryStateKey]);
   }
 
@@ -79,11 +141,17 @@ export async function readRbacConfig() {
   try {
     const loaded = await readFromDisk(filePath);
     globalThis[memoryStateKey] = loaded;
+    globalThis[kvStateKey] = 'disk';
     return loaded;
   } catch {
-    const fallback = normalizeRbacConfig(DEFAULT_RBAC);
-    globalThis[memoryStateKey] = fallback;
-    return fallback;
+    if (globalThis[memoryStateKey]) {
+      globalThis[kvStateKey] = 'memory';
+      return normalizeRbacConfig(globalThis[memoryStateKey]);
+    }
+    const seeded = normalizeRbacConfig(DEFAULT_RBAC);
+    globalThis[memoryStateKey] = seeded;
+    globalThis[kvStateKey] = 'seed';
+    return seeded;
   }
 }
 
@@ -91,14 +159,30 @@ export async function writeRbacConfig(nextConfig) {
   const normalized = normalizeRbacConfig(nextConfig);
   globalThis[memoryStateKey] = normalized;
 
+  try {
+    const persistedInKv = await writeToKv(normalized);
+    if (persistedInKv) {
+      globalThis[kvStateKey] = 'kv';
+      return normalized;
+    }
+  } catch {
+    // Continue to disk fallback.
+  }
+
   const filePath = getRbacPath();
   try {
     await writeToDisk(filePath, normalized);
+    globalThis[kvStateKey] = 'disk';
   } catch {
     // Vercel serverless filesystem is read-only; memory fallback remains active.
+    globalThis[kvStateKey] = 'memory';
   }
 
   return normalized;
+}
+
+export function getRbacPersistenceMode() {
+  return globalThis[kvStateKey] || 'unknown';
 }
 
 export function sanitizeRbacConfigForAdmin(config) {
@@ -117,4 +201,3 @@ export function sanitizeRbacConfigForAdmin(config) {
     })),
   };
 }
-

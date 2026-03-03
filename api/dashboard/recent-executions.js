@@ -3,6 +3,7 @@ import { listRecentExecutions } from '../../server/dashboardCore.js';
 import { requireUser } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
