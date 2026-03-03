@@ -75,18 +75,18 @@ export default function Dashboard() {
     const refetch = http.refetch;
     const rootRef = useRef(null);
 
-    // Setup 8 second polling interval
+    // Setup 3 second polling interval for real-time updates
     useEffect(() => {
         const intervalId = setInterval(() => {
-            // Only refetch if we aren't currently loading or already in an error state we want the user to see 
-            // and we aren't in static mockup mode which doesn't need polling
-            if (!isLoading && dataSource !== 'mockup' && !(dataSource === 'n8n-server' && sse.isConnected)) {
+            // Always refetch on n8n-server mode for real-time updates
+            // Skip polling only for static mockup mode which doesn't need it
+            if (!isLoading && dataSource !== 'mockup') {
                 refetch();
             }
-        }, 8000);
+        }, 3000);
 
         return () => clearInterval(intervalId);
-    }, [isLoading, dataSource, refetch, sse.isConnected]);
+    }, [isLoading, dataSource, refetch]);
 
     useLayoutEffect(() => {
         if (!rootRef.current) return;

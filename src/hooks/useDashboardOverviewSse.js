@@ -11,7 +11,7 @@ export function useDashboardOverviewSse(enabled, token) {
     let closed = false;
     let es;
     try {
-      const qs = new URLSearchParams({ intervalMs: "3000" });
+      const qs = new URLSearchParams({ intervalMs: "2000" });
       if (token) qs.set("token", token);
       es = new EventSource(`/api/dashboard/stream?${qs.toString()}`);
     } catch (err) {
