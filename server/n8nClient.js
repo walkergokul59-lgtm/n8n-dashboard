@@ -76,9 +76,13 @@ export class N8nClient {
     return parsed;
   }
 
-  async listExecutions({ limit = 100, status, includeData = false, cursor } = {}) {
+  async listExecutions({ limit = 100, status, includeData = false, cursor, workflowId } = {}) {
     // Try the most common params first; fall back if an instance rejects them.
     const tryQueries = [
+      { limit, status, includeData, cursor, workflowId },
+      { limit, status, cursor, workflowId },
+      { limit, status, workflowId },
+      { limit, workflowId },
       { limit, status, includeData, cursor },
       { limit, status, cursor },
       { limit, status },
@@ -122,4 +126,3 @@ export class N8nClient {
     throw lastErr || new Error('Failed to list workflows from n8n');
   }
 }
-

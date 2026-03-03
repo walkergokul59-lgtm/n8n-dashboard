@@ -30,6 +30,7 @@ Admin can open `/admin` to:
 - Assign client workflow allowlists
 
 Only workflows mapped to a client are returned for that client's dashboard APIs.
+Execution queries are also fetched per assigned workflow for scoped clients so multi-workflow clients are reflected correctly.
 
 ## Deploy to Vercel
 

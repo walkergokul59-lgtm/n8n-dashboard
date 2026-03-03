@@ -82,11 +82,90 @@ async function collectExecutionsWindow(n8n, { maxPages = 10, pageSize = 100, min
   return all;
 }
 
+function dedupeExecutionsById(executions) {
+  const seen = new Set();
+  const out = [];
+  for (const execution of executions || []) {
+    const id = execution?.id ?? execution?.executionId ?? execution?.data?.id ?? null;
+    if (!id) {
+      out.push(execution);
+      continue;
+    }
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(execution);
+  }
+  return out;
+}
+
+async function collectExecutionsForWorkflowIds(n8n, workflowIds, { pageSize = 100, maxPagesPerWorkflow = 5, minSince = null, maxCollected = Infinity } = {}) {
+  const all = [];
+  const workflowIdList = [...(workflowIds || [])].map((id) => String(id)).filter(Boolean);
+
+  for (const workflowId of workflowIdList) {
+    let cursor = undefined;
+    for (let page = 0; page < maxPagesPerWorkflow; page += 1) {
+      const { items, cursor: nextCursor } = await n8n.listExecutions({
+        limit: pageSize,
+        includeData: false,
+        cursor,
+        workflowId,
+      });
+
+      if (!Array.isArray(items) || items.length === 0) break;
+      all.push(...items);
+      if (all.length >= maxCollected) break;
+
+      if (minSince) {
+        const timestamps = items.map(pickTimestamp).filter(Boolean);
+        const oldest = timestamps.length ? new Date(Math.min(...timestamps.map((d) => d.getTime()))) : null;
+        if (oldest && oldest.getTime() < minSince.getTime()) break;
+      }
+
+      if (!nextCursor) break;
+      cursor = nextCursor;
+    }
+    if (all.length >= maxCollected) break;
+  }
+
+  const deduped = dedupeExecutionsById(all);
+  return filterExecutions(deduped, new Set(workflowIdList));
+}
+
 export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) {
   const now = new Date();
   const since48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-  const rawExecutions = await collectExecutionsWindow(n8n, { minSince: since48h });
-  const scopedExecutions = filterExecutions(rawExecutions, access?.allowedWorkflowIds ?? null);
+  const allowedWorkflowIds = access?.allowedWorkflowIds ?? null;
+
+  if (allowedWorkflowIds instanceof Set && allowedWorkflowIds.size === 0) {
+    return {
+      volumeData: buildHourlySeries(now, [], 24),
+      totalExecutions: 0,
+      executionsChange: 0,
+      totalCost: 0,
+      costChange: 0,
+      failures24h: 0,
+      errorRate: 0,
+      errorRateChange: 0,
+      averageDuration: 0,
+      durationChange: 0,
+      recentExecutions: [],
+    };
+  }
+
+  let scopedExecutions = [];
+  if (allowedWorkflowIds instanceof Set) {
+    scopedExecutions = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
+      pageSize: 100,
+      maxPagesPerWorkflow: 6,
+      minSince: since48h,
+      maxCollected: 2000,
+    });
+  } else {
+    const rawExecutions = await collectExecutionsWindow(n8n, { minSince: since48h });
+    scopedExecutions = filterExecutions(rawExecutions, allowedWorkflowIds);
+  }
 
   const last48h = scopedExecutions
     .map((ex) => ({ ex, ts: pickTimestamp(ex) }))
@@ -137,25 +216,36 @@ export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) 
 
 export async function listRecentExecutions(n8n, limit = 25, access = { allowedWorkflowIds: null }) {
   const desired = Math.max(1, Number(limit) || 25);
-  const pageSize = Math.max(100, desired);
-  const maxPages = 30;
+  const allowedWorkflowIds = access?.allowedWorkflowIds ?? null;
+  let collected = [];
 
-  const collected = [];
-  let cursor = undefined;
-  for (let page = 0; page < maxPages; page += 1) {
-    const { items, cursor: nextCursor } = await n8n.listExecutions({
-      limit: pageSize,
-      includeData: false,
-      cursor,
+  if (allowedWorkflowIds instanceof Set && allowedWorkflowIds.size === 0) {
+    collected = [];
+  } else if (allowedWorkflowIds instanceof Set) {
+    collected = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
+      pageSize: Math.max(100, desired),
+      maxPagesPerWorkflow: 8,
+      maxCollected: Math.max(desired * 4, 200),
     });
-    if (!Array.isArray(items) || items.length === 0) break;
+  } else {
+    const pageSize = Math.max(100, desired);
+    const maxPages = 30;
+    let cursor = undefined;
+    for (let page = 0; page < maxPages; page += 1) {
+      const { items, cursor: nextCursor } = await n8n.listExecutions({
+        limit: pageSize,
+        includeData: false,
+        cursor,
+      });
+      if (!Array.isArray(items) || items.length === 0) break;
 
-    const scopedItems = filterExecutions(items, access?.allowedWorkflowIds ?? null);
-    collected.push(...scopedItems);
+      const scopedItems = filterExecutions(items, allowedWorkflowIds);
+      collected.push(...scopedItems);
 
-    if (collected.length >= desired) break;
-    if (!nextCursor) break;
-    cursor = nextCursor;
+      if (collected.length >= desired) break;
+      if (!nextCursor) break;
+      cursor = nextCursor;
+    }
   }
 
   const normalized = (collected || [])
