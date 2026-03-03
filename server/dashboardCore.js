@@ -136,13 +136,33 @@ export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) 
 }
 
 export async function listRecentExecutions(n8n, limit = 25, access = { allowedWorkflowIds: null }) {
-  const { items } = await n8n.listExecutions({ limit, includeData: false });
-  const scopedItems = filterExecutions(items || [], access?.allowedWorkflowIds ?? null);
-  const normalized = (scopedItems || [])
+  const desired = Math.max(1, Number(limit) || 25);
+  const pageSize = Math.max(100, desired);
+  const maxPages = 30;
+
+  const collected = [];
+  let cursor = undefined;
+  for (let page = 0; page < maxPages; page += 1) {
+    const { items, cursor: nextCursor } = await n8n.listExecutions({
+      limit: pageSize,
+      includeData: false,
+      cursor,
+    });
+    if (!Array.isArray(items) || items.length === 0) break;
+
+    const scopedItems = filterExecutions(items, access?.allowedWorkflowIds ?? null);
+    collected.push(...scopedItems);
+
+    if (collected.length >= desired) break;
+    if (!nextCursor) break;
+    cursor = nextCursor;
+  }
+
+  const normalized = (collected || [])
     .map((ex) => ({ ex, ts: pickTimestamp(ex) }))
     .filter((x) => x.ts)
     .sort((a, b) => b.ts.getTime() - a.ts.getTime())
-    .slice(0, limit)
+    .slice(0, desired)
     .map(({ ex, ts }) => ({
       id: ex.id ?? ex.executionId ?? null,
       workflowId: ex.workflowId ?? ex.workflow?.id ?? null,

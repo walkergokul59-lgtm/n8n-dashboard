@@ -75,6 +75,14 @@ export default function RecentActivityTable() {
                         </tr>
                     </thead>
                     <tbody className="text-sm font-medium">
+                        {!isLoading && activities.length === 0 ? (
+                            <tr>
+                                <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
+                                    No executions found for your assigned workflows yet.
+                                </td>
+                            </tr>
+                        ) : null}
+
                         {activities.map((activity, index) => (
                             <React.Fragment key={activity.id}>
                                 <tr
