@@ -1,6 +1,11 @@
 import { Activity } from 'lucide-react';
+import { useDashboardData } from '../hooks/useDashboardData';
 
 export default function SystemHealth() {
+    const { data } = useDashboardData(() => ({ ok: true, n8nLatencyMs: 45 }), '/dashboard/health');
+    const latency = Number.isFinite(data?.n8nLatencyMs) ? data.n8nLatencyMs : 0;
+    const latencyPct = Math.max(0, Math.min(100, Math.round((latency / 200) * 100))); // 200ms => 100%
+
     return (
         <div className="bg-[#1a1f2e] rounded-xl p-6 shadow-lg border border-white/5 w-full flex flex-col relative overflow-hidden group">
             {/* Background Accent */}
@@ -18,12 +23,12 @@ export default function SystemHealth() {
                 <div>
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-gray-400 text-sm font-medium">API Latency</span>
-                        <span className="text-emerald-400 font-bold">45ms</span>
+                        <span className="text-emerald-400 font-bold">{latency}ms</span>
                     </div>
                     <div className="w-full bg-[#0f1419] rounded-full h-2.5 border border-white/5 overflow-hidden">
                         <div
                             className="bg-emerald-400 h-2.5 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-1000 ease-out"
-                            style={{ width: '45%' }}
+                            style={{ width: `${latencyPct}%` }}
                         ></div>
                     </div>
                 </div>

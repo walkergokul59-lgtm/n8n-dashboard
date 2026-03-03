@@ -11,7 +11,7 @@ function cn(...inputs) {
 }
 
 export default function InvoiceRuns() {
-    const { data: invoices, isLoading } = useDashboardData(getInvoiceRuns, '/v1/workflows/invoice-runs');
+    const { data: invoices, isLoading } = useDashboardData(getInvoiceRuns);
     const runs = Array.isArray(invoices) ? invoices : [];
 
     // Top KPI Metrics

@@ -11,7 +11,7 @@ import { useSettings } from '../context/SettingsContext';
  * @returns {Object} - { data, isLoading, isRefetching, error, refetch }
  */
 export const useDashboardData = (fetcherFn, endpointPath = '') => {
-    const { dataSource, apiUrl, apiKey } = useSettings();
+    const { dataSource } = useSettings();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefetching, setIsRefetching] = useState(false);
@@ -25,46 +25,38 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
         }
 
         setError(null);
+        try {
+            if (dataSource === 'n8n-server' && endpointPath) {
+                // LIVE (SERVER-SIDE) ROUTE - token stays on the server
+                const response = await fetch(`/api${endpointPath}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
 
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (dataSource === 'n8n-api') {
-                    // LIVE API FETCH ROUTE
-                    const response = await fetch(`${apiUrl}${endpointPath}`, {
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`n8n API Error: ${response.status} ${response.statusText}`);
-                    }
-
-                    const result = await response.json();
-                    setData(result);
-                    resolve(result);
-
-                } else {
-                    // MOCK ROUTES
-                    const timeoutMs = dataSource === 'mockup' ? 0 : 300; // 'mockup' instantly resolves
-
-                    setTimeout(() => {
-                        const result = fetcherFn();
-                        setData(result);
-                        resolve(result);
-                    }, timeoutMs);
+                if (!response.ok) {
+                    throw new Error(`Dashboard API Error: ${response.status} ${response.statusText}`);
                 }
-            } catch (err) {
-                setError(err);
-                reject(err);
-            } finally {
-                setIsLoading(false);
-                setIsRefetching(false);
+
+                const result = await response.json();
+                setData(result);
+                return result;
             }
-        });
-    }, [fetcherFn, dataSource, apiUrl, apiKey, endpointPath]);
+
+            // MOCK ROUTES
+            const timeoutMs = dataSource === 'mockup' ? 0 : 300; // 'mockup' instantly resolves
+            if (timeoutMs) {
+                await new Promise((r) => setTimeout(r, timeoutMs));
+            }
+            const result = fetcherFn();
+            setData(result);
+            return result;
+        } catch (err) {
+            setError(err);
+            throw err;
+        } finally {
+            setIsLoading(false);
+            setIsRefetching(false);
+        }
+    }, [fetcherFn, dataSource, endpointPath]);
 
     // Initial mount fetch
     useEffect(() => {

@@ -1,12 +1,6 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 
-function cn(...inputs) {
-    return twMerge(clsx(inputs));
-}
-
-export default function RecentFailures() {
+export default function RecentFailures({ count = 0 }) {
     return (
         <div className="bg-[#1a1f2e] rounded-xl p-6 shadow-lg border border-white/5 w-full flex flex-col relative overflow-hidden group">
             {/* Background Accent */}
@@ -23,12 +17,25 @@ export default function RecentFailures() {
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center text-center py-6 relative z-10">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20">
-                    <CheckCircle2 className="text-emerald-400" size={32} />
-                </div>
-                <div className="text-3xl font-bold text-white mb-2">0<span className="text-gray-500 text-xl">K</span></div>
-                <p className="text-gray-400 text-sm font-medium">No failures detected</p>
-                <p className="text-gray-500 text-xs mt-1">All workflows are running smoothly</p>
+                {count > 0 ? (
+                    <>
+                        <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center mb-4 border border-rose-500/20">
+                            <XCircle className="text-rose-400" size={32} />
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{count}</div>
+                        <p className="text-gray-400 text-sm font-medium">Failures detected</p>
+                        <p className="text-gray-500 text-xs mt-1">Investigate recent error executions</p>
+                    </>
+                ) : (
+                    <>
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20">
+                            <CheckCircle2 className="text-emerald-400" size={32} />
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">0</div>
+                        <p className="text-gray-400 text-sm font-medium">No failures detected</p>
+                        <p className="text-gray-500 text-xs mt-1">All workflows are running smoothly</p>
+                    </>
+                )}
             </div>
         </div>
     );

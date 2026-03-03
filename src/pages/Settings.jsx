@@ -1,8 +1,8 @@
-import { Key, Link, Database, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Link, Database, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
 
 export default function Settings() {
-    const { dataSource, setDataSource, apiUrl, setApiUrl, apiKey, setApiKey } = useSettings();
+    const { dataSource, setDataSource } = useSettings();
 
     // Data Source Map
     const dataSources = [
@@ -21,9 +21,9 @@ export default function Settings() {
             color: 'text-[#00d9ff]'
         },
         {
-            id: 'n8n-api',
+            id: 'n8n-server',
             title: 'Live n8n Server',
-            description: 'Connects to a live n8n instance via authenticated endpoints. Requires API Key & URL.',
+            description: 'Connects to a live n8n instance through this dashboard server. Token stays server-side via .env.',
             icon: Link,
             color: 'text-emerald-400'
         }
@@ -65,15 +65,15 @@ export default function Settings() {
                 })}
             </div>
 
-            {/* Live API Fields - Only Active if 'n8n-api' Selected */}
-            <div className={`mt-10 bg-[#1a1f2e] rounded-xl border border-white/5 overflow-hidden transition-all duration-500 ${dataSource === 'n8n-api' ? 'ring-1 ring-emerald-500/50 outline outline-1 outline-emerald-500/10' : 'opacity-40 grayscale pointer-events-none'}`}>
+            {/* Live API Note - Only Active if 'n8n-server' Selected */}
+            <div className={`mt-10 bg-[#1a1f2e] rounded-xl border border-white/5 overflow-hidden transition-all duration-500 ${dataSource === 'n8n-server' ? 'ring-1 ring-emerald-500/50 outline outline-1 outline-emerald-500/10' : 'opacity-40 grayscale pointer-events-none'}`}>
 
                 <div className="p-6 border-b border-white/5 bg-[#141a21]/50 flex items-center justify-between">
                     <div>
                         <h3 className="text-lg font-bold text-white mb-1">Live Server Authentication</h3>
-                        <p className="text-sm text-gray-400">Provide keys required to securely handshake with your n8n API.</p>
+                        <p className="text-sm text-gray-400">Configure `N8N_BASE_URL` and `N8N_API_TOKEN` in `.env` on the server.</p>
                     </div>
-                    {dataSource === 'n8n-api' && (
+                    {dataSource === 'n8n-server' && (
                         <div className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             <ShieldAlert size={14} className="mr-2" />
                             Secure Context
@@ -82,32 +82,13 @@ export default function Settings() {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Base URL Input */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-300 mb-2 uppercase tracking-wider">Base n8n External URL</label>
-                        <input
-                            type="url"
-                            value={apiUrl}
-                            onChange={(e) => setApiUrl(e.target.value)}
-                            placeholder="https://n8n.yourdomain.com/api/v1"
-                            className="w-full bg-[#0f1419] border border-white/10 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-[#00d9ff] focus:ring-1 focus:ring-[#00d9ff] transition-all placeholder:text-gray-600 font-mono text-sm"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">The fully qualified domain terminating with the api version slug.</p>
-                    </div>
-
-                    {/* API Key Input */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-300 mb-2 uppercase tracking-wider flex items-center">
-                            Authentication Token <Key size={14} className="ml-2 text-gray-500" />
-                        </label>
-                        <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="n8n_api_xxxxxxxx..."
-                            className="w-full bg-[#0f1419] border border-white/10 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-[#00d9ff] focus:ring-1 focus:ring-[#00d9ff] transition-all placeholder:text-gray-600 font-mono text-sm"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">Your private service account token. This is encrypted strictly in your browser's local storage and never leaves this client unless directly querying your URL.</p>
+                        <p className="text-sm text-gray-300">
+                            This dashboard no longer stores your n8n token in the browser. Put your settings in `.env` (see `.env.example`).
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Tip: restart `npm run dev` after changing `.env`.
+                        </p>
                     </div>
                 </div>
 

@@ -10,6 +10,7 @@ import SystemHealth from "../components/SystemHealth";
 import RecentActivityTable from "../components/RecentActivityTable";
 import ChromaGrid from "../components/ChromaGrid";
 import { useDashboardData } from "../hooks/useDashboardData";
+import { useDashboardOverviewSse } from "../hooks/useDashboardOverviewSse";
 import { getWorkflowMetrics } from "../utils/mock-data";
 import { useSettings } from "../context/SettingsContext";
 import { gsap, ScrollTrigger } from "../lib/gsap.js";
@@ -61,8 +62,15 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", changeText,
 };
 
 export default function Dashboard() {
-    const { data, isLoading, isRefetching, refetch } = useDashboardData(getWorkflowMetrics, '/v1/executions');
     const { dataSource } = useSettings();
+
+    const sse = useDashboardOverviewSse(dataSource === 'n8n-server');
+    const http = useDashboardData(getWorkflowMetrics, '/dashboard/overview');
+
+    const data = dataSource === 'n8n-server' ? sse.data : http.data;
+    const isLoading = dataSource === 'n8n-server' ? !sse.data : http.isLoading;
+    const isRefetching = dataSource === 'n8n-server' ? sse.isConnected : http.isRefetching;
+    const refetch = http.refetch;
     const rootRef = useRef(null);
 
     // Setup 8 second polling interval
@@ -70,7 +78,7 @@ export default function Dashboard() {
         const intervalId = setInterval(() => {
             // Only refetch if we aren't currently loading or already in an error state we want the user to see 
             // and we aren't in static mockup mode which doesn't need polling
-            if (!isLoading && dataSource !== 'mockup') {
+            if (!isLoading && dataSource !== 'mockup' && dataSource !== 'n8n-server') {
                 refetch();
             }
         }, 8000);
@@ -193,7 +201,7 @@ export default function Dashboard() {
 
                 {/* Right Side Sections */}
                 <div className="w-full lg:w-[40%] flex flex-col sm:flex-row lg:flex-col gap-6">
-                    <RecentFailures />
+                    <RecentFailures count={data?.failures24h || 0} />
                     <SystemHealth />
                 </div>
             </div>

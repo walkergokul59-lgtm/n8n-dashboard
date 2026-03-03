@@ -4,7 +4,7 @@ import { getAIAgentLogs } from '../utils/mock-data';
 import { useDashboardData } from '../hooks/useDashboardData'; // Assuming this is the path for the custom hook
 
 export default function AIAgentLogs() {
-    const { data: logs, isLoading } = useDashboardData(getAIAgentLogs, '/v1/chat/logs');
+    const { data: logs, isLoading } = useDashboardData(getAIAgentLogs);
     const logsList = Array.isArray(logs) ? logs : [];
 
     // Calculate summary stats

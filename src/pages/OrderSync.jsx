@@ -11,7 +11,7 @@ function cn(...inputs) {
 }
 
 export default function OrderSync() {
-    const { data: orders, isLoading } = useDashboardData(getOrderSyncs, '/v1/workflows/order-syncs');
+    const { data: orders, isLoading } = useDashboardData(getOrderSyncs);
 
     // Sorting state: column key and direction ('asc' or 'desc')
     const [sortConfig, setSortConfig] = useState({ key: 'syncedAt', direction: 'desc' });

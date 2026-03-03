@@ -52,7 +52,7 @@ const NetworkEdge = ({ x1, y1, x2, y2, delay = 0 }) => (
 );
 
 export default function SmsOutreach() {
-    const { data, isLoading } = useDashboardData(getSmsCampaigns, '/v1/workflows/sms-outreach');
+    const { data, isLoading } = useDashboardData(getSmsCampaigns);
     const messagesSent = data?.messagesSent ?? 0;
     const deliveryRate = data?.deliveryRate ?? 0;
     const totalCost = data?.totalCost ?? 0;
