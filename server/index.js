@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { loadEnv } from './env.js';
 import { N8nClient } from './n8nClient.js';
-import { createDashboardApi } from './dashboardApi.js';
+import { createApiRouter } from './apiRouter.js';
 
 const isProd = process.argv.includes('--prod');
 const port = Number(process.env.PORT || 5173);
@@ -36,7 +36,7 @@ async function fileExists(filePath) {
 async function start() {
   const env = loadEnv();
   const n8n = new N8nClient(env);
-  const handleDashboardApi = createDashboardApi(n8n);
+  const handleApi = createApiRouter(n8n);
 
   const distDir = path.resolve(process.cwd(), 'dist');
 
@@ -51,15 +51,8 @@ async function start() {
           return;
         }
 
-        if (req.url === '/api/health') {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.end(JSON.stringify({ ok: true }));
-          return;
-        }
-
-        if (req.url.startsWith('/api/dashboard/')) {
-          const handled = await handleDashboardApi(req, res);
+        if (req.url.startsWith('/api/')) {
+          const handled = await handleApi(req, res);
           if (handled) return;
         }
 

@@ -1,6 +1,8 @@
 import React, { Component, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SettingsProvider } from "./context/SettingsContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/useAuth";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import AIAgentLogs from "./pages/AIAgentLogs";
@@ -9,6 +11,8 @@ import OrderSync from "./pages/OrderSync";
 import SmsOutreach from "./pages/SmsOutreach";
 import Settings from "./pages/Settings";
 import Preloader from "./components/Preloader";
+import Login from "./pages/Login";
+import AdminPanel from "./pages/AdminPanel";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -41,6 +45,38 @@ class ErrorBoundary extends Component {
   }
 }
 
+function RequireAuth({ children }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking session...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function RequireAdmin({ children }) {
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking access...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   const [isBootReady, setIsBootReady] = useState(false);
   const [showPreloader, setShowPreloader] = useState(true);
@@ -61,32 +97,50 @@ function App() {
   }, []);
 
   return (
-    <SettingsProvider>
-      <ErrorBoundary>
-        {showPreloader && (
-          <Preloader
-            ready={isBootReady}
-            onDone={() => {
-              setShowPreloader(false);
-            }}
-          />
-        )}
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="agent-logs" element={<AIAgentLogs />} />
-              <Route path="invoice-runs" element={<InvoiceRuns />} />
-              <Route path="order-sync" element={<OrderSync />} />
-              <Route path="sms-outreach" element={<SmsOutreach />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ErrorBoundary>
-    </SettingsProvider>
+    <AuthProvider>
+      <SettingsProvider>
+        <ErrorBoundary>
+          {showPreloader && (
+            <Preloader
+              ready={isBootReady}
+              onDone={() => {
+                setShowPreloader(false);
+              }}
+            />
+          )}
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/"
+                element={(
+                  <RequireAuth>
+                    <Layout />
+                  </RequireAuth>
+                )}
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="agent-logs" element={<AIAgentLogs />} />
+                <Route path="invoice-runs" element={<InvoiceRuns />} />
+                <Route path="order-sync" element={<OrderSync />} />
+                <Route path="sms-outreach" element={<SmsOutreach />} />
+                <Route path="settings" element={<Settings />} />
+                <Route
+                  path="admin"
+                  element={(
+                    <RequireAdmin>
+                      <AdminPanel />
+                    </RequireAdmin>
+                  )}
+                />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ErrorBoundary>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 

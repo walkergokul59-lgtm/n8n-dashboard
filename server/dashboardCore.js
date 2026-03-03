@@ -1,3 +1,5 @@
+import { filterExecutions, filterWorkflows } from './accessControl.js';
+
 function toDate(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -80,12 +82,13 @@ async function collectExecutionsWindow(n8n, { maxPages = 10, pageSize = 100, min
   return all;
 }
 
-export async function buildOverview(n8n) {
+export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) {
   const now = new Date();
   const since48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const rawExecutions = await collectExecutionsWindow(n8n, { minSince: since48h });
+  const scopedExecutions = filterExecutions(rawExecutions, access?.allowedWorkflowIds ?? null);
 
-  const last48h = rawExecutions
+  const last48h = scopedExecutions
     .map((ex) => ({ ex, ts: pickTimestamp(ex) }))
     .filter((x) => x.ts && x.ts.getTime() >= since48h.getTime())
     .sort((a, b) => b.ts.getTime() - a.ts.getTime());
@@ -132,9 +135,10 @@ export async function buildOverview(n8n) {
   };
 }
 
-export async function listRecentExecutions(n8n, limit = 25) {
+export async function listRecentExecutions(n8n, limit = 25, access = { allowedWorkflowIds: null }) {
   const { items } = await n8n.listExecutions({ limit, includeData: false });
-  const normalized = (items || [])
+  const scopedItems = filterExecutions(items || [], access?.allowedWorkflowIds ?? null);
+  const normalized = (scopedItems || [])
     .map((ex) => ({ ex, ts: pickTimestamp(ex) }))
     .filter((x) => x.ts)
     .sort((a, b) => b.ts.getTime() - a.ts.getTime())
@@ -149,9 +153,10 @@ export async function listRecentExecutions(n8n, limit = 25) {
   return { data: normalized };
 }
 
-export async function listWorkflows(n8n, limit = 200) {
+export async function listWorkflows(n8n, limit = 200, access = { allowedWorkflowIds: null }) {
   const { items } = await n8n.listWorkflows({ limit });
-  const normalized = (items || []).map((wf) => ({
+  const scopedItems = filterWorkflows(items || [], access?.allowedWorkflowIds ?? null);
+  const normalized = (scopedItems || []).map((wf) => ({
     id: wf.id ?? null,
     name: wf.name ?? wf?.data?.name ?? 'Unnamed',
     active: Boolean(wf.active),
@@ -165,4 +170,3 @@ export async function checkHealth(n8n) {
   await n8n.listWorkflows({ limit: 1 });
   return { ok: true, n8nLatencyMs: Date.now() - started };
 }
-

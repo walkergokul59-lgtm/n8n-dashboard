@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function useDashboardOverviewSse(enabled) {
+export function useDashboardOverviewSse(enabled, token) {
   const [data, setData] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
@@ -11,7 +11,9 @@ export function useDashboardOverviewSse(enabled) {
     let closed = false;
     let es;
     try {
-      es = new EventSource("/api/dashboard/stream?intervalMs=3000");
+      const qs = new URLSearchParams({ intervalMs: "3000" });
+      if (token) qs.set("token", token);
+      es = new EventSource(`/api/dashboard/stream?${qs.toString()}`);
     } catch (err) {
       setTimeout(() => {
         setError(err);
@@ -55,7 +57,7 @@ export function useDashboardOverviewSse(enabled) {
       closed = true;
       es?.close?.();
     };
-  }, [enabled]);
+  }, [enabled, token]);
 
   return { data, isConnected, error };
 }

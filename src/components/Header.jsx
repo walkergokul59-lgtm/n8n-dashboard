@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { gsap } from "../lib/gsap.js";
+import { useAuth } from "../context/useAuth";
 
 const ROUTE_LABELS = {
     "/": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
@@ -10,10 +11,12 @@ const ROUTE_LABELS = {
     "/order-sync": { title: "Order Sync", subtitle: "Manage e-commerce order synchronization" },
     "/sms-outreach": { title: "SMS Outreach", subtitle: "View and manage automated SMS campaigns" },
     "/settings": { title: "Settings", subtitle: "Configure advanced dashboard preferences" },
+    "/admin": { title: "Admin Panel", subtitle: "Manage clients, users, and workflow access rules" },
 };
 
 export function Header() {
     const location = useLocation();
+    const { user } = useAuth();
     const rootRef = useRef(null);
     const titleRef = useRef(null);
     const subtitleRef = useRef(null);
@@ -76,7 +79,7 @@ export function Header() {
                         Help
                     </button>
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[#0f1419] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform">
-                        N
+                        {String(user?.email || 'N').charAt(0).toUpperCase()}
                     </div>
                 </div>
             </div>

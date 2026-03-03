@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/useAuth';
 
 /**
  * Custom hook to simulate fetching data from an API with loading states,
@@ -12,6 +13,7 @@ import { useSettings } from '../context/SettingsContext';
  */
 export const useDashboardData = (fetcherFn, endpointPath = '') => {
     const { dataSource } = useSettings();
+    const { apiFetch } = useAuth();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefetching, setIsRefetching] = useState(false);
@@ -28,7 +30,7 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
         try {
             if (dataSource === 'n8n-server' && endpointPath) {
                 // LIVE (SERVER-SIDE) ROUTE - token stays on the server
-                const response = await fetch(`/api${endpointPath}`, {
+                const response = await apiFetch(`/api${endpointPath}`, {
                     headers: { 'Accept': 'application/json' }
                 });
 
@@ -51,12 +53,12 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
             return result;
         } catch (err) {
             setError(err);
-            throw err;
+            return null;
         } finally {
             setIsLoading(false);
             setIsRefetching(false);
         }
-    }, [fetcherFn, dataSource, endpointPath]);
+    }, [fetcherFn, dataSource, endpointPath, apiFetch]);
 
     // Initial mount fetch
     useEffect(() => {

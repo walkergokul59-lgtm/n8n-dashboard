@@ -14,6 +14,23 @@ This is a React + Vite dashboard with a small Node server that securely connects
 
 3. In the app, go to **Settings** and select **Live n8n Server**.
 
+## Access Control + Admin
+
+The dashboard now requires login and enforces workflow visibility per client on the backend.
+
+Default test users:
+
+- Admin: `root@gmail.com` / `root`
+- Client: `client1@gmail.com` / `client1`
+
+Admin can open `/admin` to:
+
+- Create/edit users
+- Assign user role (`admin` or `client`)
+- Assign client workflow allowlists
+
+Only workflows mapped to a client are returned for that client's dashboard APIs.
+
 ## Deploy to Vercel
 
 This project uses Vercel serverless functions under `api/dashboard/*` in production.
@@ -26,6 +43,8 @@ Set these Environment Variables in Vercel:
 - If your n8n requires the header: set `N8N_AUTH_TYPE=header` and `N8N_AUTH_HEADER=X-N8N-API-KEY`
 
 If `N8N_BASE_URL` points to `http://localhost:5678`, Vercel cannot reach it.
+
+Note: on Vercel, RBAC writes can be ephemeral without external storage. For persistent admin changes, wire `server/rbacStore.js` to a durable database (Postgres/Redis/KV).
 
 ## Build / Run (prod)
 

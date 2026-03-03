@@ -13,6 +13,7 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import { useDashboardOverviewSse } from "../hooks/useDashboardOverviewSse";
 import { getWorkflowMetrics } from "../utils/mock-data";
 import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/useAuth";
 import { gsap, ScrollTrigger } from "../lib/gsap.js";
 
 function cn(...inputs) {
@@ -63,8 +64,9 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", changeText,
 
 export default function Dashboard() {
     const { dataSource } = useSettings();
+    const { token } = useAuth();
 
-    const sse = useDashboardOverviewSse(dataSource === 'n8n-server');
+    const sse = useDashboardOverviewSse(dataSource === 'n8n-server', token);
     const http = useDashboardData(getWorkflowMetrics, '/dashboard/overview');
 
     const data = dataSource === 'n8n-server' ? (sse.data || http.data) : http.data;

@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "id": "user-admin",
+      "email": "root@gmail.com",
+      "password": "root",
+      "role": "admin",
+      "clientId": "admin"
+    },
+    {
+      "id": "user-client1",
+      "email": "client1@gmail.com",
+      "password": "client1",
+      "role": "client",
+      "clientId": "client1"
+    }
+  ],
+  "clients": [
+    {
+      "id": "client1",
+      "name": "Client 1",
+      "workflowIds": [
+        "nt5BBCarHOwKEtYf"
+      ]
+    }
+  ]
+}
