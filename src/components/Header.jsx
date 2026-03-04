@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { gsap } from "../lib/gsap.js";
 import { useAuth } from "../context/useAuth";
+import { useSettings } from "../context/SettingsContext";
 
 const ROUTE_LABELS = {
     "/": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
@@ -17,6 +18,7 @@ const ROUTE_LABELS = {
 export function Header() {
     const location = useLocation();
     const { user } = useAuth();
+    const { clientProfile } = useSettings();
     const rootRef = useRef(null);
     const titleRef = useRef(null);
     const subtitleRef = useRef(null);
@@ -25,6 +27,10 @@ export function Header() {
         title: "Page Not Found",
         subtitle: "The requested page does not exist.",
     };
+    const isClientUser = user?.role === "client";
+    const avatarLabel = isClientUser ? (clientProfile?.clientName || user?.email || "N") : (user?.email || "N");
+    const showClientProfileImage = isClientUser && Boolean(clientProfile?.profileImage);
+    const userInitial = String(avatarLabel).charAt(0).toUpperCase();
 
     useLayoutEffect(() => {
         if (!rootRef.current) return;
@@ -78,8 +84,16 @@ export function Header() {
                     <button className="h-8 px-4 text-xs font-semibold bg-[#1a222a] hover:bg-[#202933] rounded-md border border-[#26313d] transition-colors text-white">
                         Help
                     </button>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[#0f1419] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform">
-                        {String(user?.email || 'N').charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[#0f1419] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform overflow-hidden">
+                        {showClientProfileImage ? (
+                            <img
+                                src={clientProfile.profileImage}
+                                alt={clientProfile.clientName || "Client profile"}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            userInitial
+                        )}
                     </div>
                 </div>
             </div>

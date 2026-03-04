@@ -1,99 +1,262 @@
-import { Link, Database, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BadgeCheck, ImagePlus, Save } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
 
-export default function Settings() {
-    const { dataSource, setDataSource } = useSettings();
+const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_PROFILE_IMAGE_DIMENSION = 384;
+const PROFILE_IMAGE_QUALITY = 0.82;
 
-    // Data Source Map
-    const dataSources = [
-        {
-            id: 'mockup',
-            title: 'Static Mock Data',
-            description: 'Displays static n8n dummy data. Disables background polling and interactions.',
-            icon: Database,
-            color: 'text-gray-400'
-        },
-        {
-            id: 'realtime-mockup',
-            title: 'Real-Time Interactivity',
-            description: 'Simulates live n8n network fetches, latency, and background polling using mock schemas.',
-            icon: CheckCircle2,
-            color: 'text-[#00d9ff]'
-        },
-        {
-            id: 'n8n-server',
-            title: 'Live n8n Server',
-            description: 'Connects to a live n8n instance through this dashboard server. Token stays server-side via .env.',
-            icon: Link,
-            color: 'text-emerald-400'
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Could not read the selected image file."));
+    reader.readAsDataURL(file);
+});
+
+const optimizeImageDataUrl = (dataUrl) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+        const longestSide = Math.max(image.width, image.height) || 1;
+        const scale = Math.min(1, MAX_PROFILE_IMAGE_DIMENSION / longestSide);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+            reject(new Error("Could not process the selected image."));
+            return;
         }
-    ];
+
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", PROFILE_IMAGE_QUALITY));
+    };
+    image.onerror = () => reject(new Error("Could not process the selected image."));
+    image.src = dataUrl;
+});
+
+const isQuotaExceededError = (error) => {
+    if (!error) return false;
+    const name = String(error.name || "");
+    const message = String(error.message || "");
+    return name === "QuotaExceededError"
+        || name === "NS_ERROR_DOM_QUOTA_REACHED"
+        || message.toLowerCase().includes("quota");
+};
+
+export default function Settings() {
+    const { dataSource, setDataSource, clientProfile, setClientProfile } = useSettings();
+    const [formData, setFormData] = useState(clientProfile);
+    const [statusMessage, setStatusMessage] = useState("");
+
+    useEffect(() => {
+        setDataSource("n8n-server");
+    }, [setDataSource]);
+
+    useEffect(() => {
+        setFormData(clientProfile);
+    }, [clientProfile]);
+
+    const isFormValid = useMemo(() => (
+        Boolean(formData.clientName.trim())
+        && Boolean(formData.contactNumber.trim())
+        && Boolean(formData.businessName.trim())
+        && Boolean(formData.primaryEmail.trim())
+        && Boolean(formData.secondaryEmail.trim())
+        && Boolean(formData.profileImage)
+    ), [formData]);
+
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setStatusMessage("");
+        setFormData((previous) => ({ ...previous, [name]: value }));
+    };
+
+    const handleImageChange = async (event) => {
+        const [file] = event.target.files || [];
+        if (!file) return;
+
+        setStatusMessage("");
+
+        if (!file.type.startsWith("image/")) {
+            setStatusMessage("Please upload a valid image file.");
+            return;
+        }
+
+        if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+            setStatusMessage("Image is too large. Please upload an image smaller than 8 MB.");
+            return;
+        }
+
+        try {
+            const rawDataUrl = await fileToDataUrl(file);
+            const optimizedDataUrl = await optimizeImageDataUrl(rawDataUrl);
+            setFormData((previous) => ({ ...previous, profileImage: optimizedDataUrl }));
+            setStatusMessage("Image added. Click Save Profile to persist details.");
+        } catch {
+            setStatusMessage("Could not process the selected image. Please try another one.");
+        }
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        if (!isFormValid) {
+            setStatusMessage("Please complete all mandatory profile fields before saving.");
+            return;
+        }
+
+        const sanitizedProfile = {
+            clientName: formData.clientName.trim(),
+            contactNumber: formData.contactNumber.trim(),
+            businessName: formData.businessName.trim(),
+            primaryEmail: formData.primaryEmail.trim(),
+            secondaryEmail: formData.secondaryEmail.trim(),
+            profileImage: formData.profileImage,
+        };
+
+        try {
+            setClientProfile(sanitizedProfile);
+            setStatusMessage("Profile details saved successfully.");
+        } catch (error) {
+            if (isQuotaExceededError(error)) {
+                setStatusMessage("Browser storage is full. Use a smaller image and try again.");
+                return;
+            }
+            setStatusMessage("Could not save profile details. Please try again.");
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-
-            {/* Top Config Header */}
-            <div>
-                <h2 className="text-xl font-bold text-white mb-1">Data Source Configuration</h2>
-                <p className="text-sm text-gray-400">Select how the dashboard ingests and displays metric payloads.</p>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-sm font-semibold text-emerald-300">Live n8n Mode</h2>
+                    <p className="text-xs text-emerald-200/80">Dashboard is configured to use live n8n server data by default.</p>
+                </div>
+                <div className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    <BadgeCheck size={14} className="mr-2" />
+                    {dataSource}
+                </div>
             </div>
 
-            {/* Toggle Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {dataSources.map((source) => {
-                    const active = dataSource === source.id;
-                    const Icon = source.icon;
-                    return (
-                        <div
-                            key={source.id}
-                            onClick={() => setDataSource(source.id)}
-                            className={`relative cursor-pointer rounded-xl p-6 border transition-all duration-300 ${active
-                                    ? 'bg-[#00d9ff]/5 border-[#00d9ff] shadow-[0_0_20px_rgba(0,217,255,0.15)] ring-1 ring-[#00d9ff]/50 hover:bg-[#00d9ff]/10'
-                                    : 'bg-[#1a1f2e] border-white/5 hover:bg-[#1a222a] hover:border-white/10 opacity-70 hover:opacity-100'
-                                }`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`p-2 rounded-lg bg-[#0f1419]/50 border ${active ? 'border-[#00d9ff]/20' : 'border-white/5'} ${source.color}`}>
-                                    <Icon size={24} strokeWidth={2.5} />
-                                </div>
-                                <div className={`h-4 w-4 rounded-full border-2 transition-colors ${active ? 'border-[#00d9ff] bg-[#00d9ff]' : 'border-gray-500 bg-transparent'}`} />
+            <div className="rounded-xl border border-white/10 bg-[#141a21]/70 overflow-hidden">
+                <div className="border-b border-white/10 px-6 py-5">
+                    <h3 className="text-lg font-bold text-white">Client Profile Details</h3>
+                    <p className="text-sm text-gray-400">All fields below are mandatory. Saved profile image appears in the top-right header.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-200">Client Name *</span>
+                            <input
+                                type="text"
+                                name="clientName"
+                                required
+                                value={formData.clientName}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                placeholder="Enter client name"
+                            />
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-200">Contact Number *</span>
+                            <input
+                                type="tel"
+                                name="contactNumber"
+                                required
+                                value={formData.contactNumber}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                placeholder="+1 000 000 0000"
+                            />
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-200">Business Name *</span>
+                            <input
+                                type="text"
+                                name="businessName"
+                                required
+                                value={formData.businessName}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                placeholder="Enter business name"
+                            />
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-200">Primary Email *</span>
+                            <input
+                                type="email"
+                                name="primaryEmail"
+                                required
+                                value={formData.primaryEmail}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                placeholder="primary@business.com"
+                            />
+                        </label>
+
+                        <label className="space-y-2 md:col-span-2">
+                            <span className="text-sm font-medium text-gray-200">Secondary Email *</span>
+                            <input
+                                type="email"
+                                name="secondaryEmail"
+                                required
+                                value={formData.secondaryEmail}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                placeholder="support@business.com"
+                            />
+                        </label>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-[#0f1419] p-4">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="w-16 h-16 rounded-full overflow-hidden border border-white/20 bg-[#1a222a] flex items-center justify-center">
+                                {formData.profileImage ? (
+                                    <img src={formData.profileImage} alt="Client profile" className="h-full w-full object-cover" />
+                                ) : (
+                                    <ImagePlus size={20} className="text-gray-400" />
+                                )}
                             </div>
-                            <h3 className={`text-lg font-bold mb-2 ${active ? 'text-white' : 'text-gray-300'}`}>{source.title}</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed">{source.description}</p>
+
+                            <label className="space-y-2 flex-1 min-w-[240px]">
+                                <span className="text-sm font-medium text-gray-200">Profile Image *</span>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    required={!formData.profileImage}
+                                    className="block w-full cursor-pointer rounded-lg border border-white/10 bg-[#141a21] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[#00d9ff]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7cf3ff]"
+                                />
+                            </label>
                         </div>
-                    );
-                })}
-            </div>
-
-            {/* Live API Note - Only Active if 'n8n-server' Selected */}
-            <div className={`mt-10 bg-[#1a1f2e] rounded-xl border border-white/5 overflow-hidden transition-all duration-500 ${dataSource === 'n8n-server' ? 'ring-1 ring-emerald-500/50 outline outline-1 outline-emerald-500/10' : 'opacity-40 grayscale pointer-events-none'}`}>
-
-                <div className="p-6 border-b border-white/5 bg-[#141a21]/50 flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-bold text-white mb-1">Live Server Authentication</h3>
-                        <p className="text-sm text-gray-400">Configure `N8N_BASE_URL` and `N8N_API_TOKEN` in `.env` on the server.</p>
                     </div>
-                    {dataSource === 'n8n-server' && (
-                        <div className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <ShieldAlert size={14} className="mr-2" />
-                            Secure Context
-                        </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs text-gray-500">Mandatory fields are marked with *</p>
+                        <button
+                            type="submit"
+                            className="inline-flex items-center rounded-lg bg-[#00d9ff] px-4 py-2 text-sm font-semibold text-[#0f1419] transition hover:bg-[#28e0ff] disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={!isFormValid}
+                        >
+                            <Save size={16} className="mr-2" />
+                            Save Profile
+                        </button>
+                    </div>
+
+                    {statusMessage && (
+                        <p className="text-sm text-[#7cf3ff]">{statusMessage}</p>
                     )}
-                </div>
-
-                <div className="p-6 space-y-6">
-                    <div>
-                        <p className="text-sm text-gray-300">
-                            This dashboard no longer stores your n8n token in the browser. Put your settings in `.env` (see `.env.example`).
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                            Tip: restart `npm run dev` after changing `.env`.
-                        </p>
-                    </div>
-                </div>
-
+                </form>
             </div>
-
         </div>
     );
 }

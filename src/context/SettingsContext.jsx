@@ -1,7 +1,31 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 
 // Create the Context Object
 const SettingsContext = createContext();
+const DATASOURCE_KEY = 'n8nDataSource';
+const PROFILE_KEY = 'n8nClientProfile';
+const LIVE_DATASOURCE = 'n8n-server';
+
+const EMPTY_PROFILE = {
+    clientName: '',
+    contactNumber: '',
+    businessName: '',
+    primaryEmail: '',
+    secondaryEmail: '',
+    profileImage: '',
+};
+
+const readProfileFromStorage = () => {
+    try {
+        const stored = localStorage.getItem(PROFILE_KEY);
+        if (!stored) return EMPTY_PROFILE;
+        const parsed = JSON.parse(stored);
+        return { ...EMPTY_PROFILE, ...parsed };
+    } catch {
+        return EMPTY_PROFILE;
+    }
+};
 
 // Custom hook for consuming the Settings Context
 export const useSettings = () => {
@@ -14,23 +38,35 @@ export const useSettings = () => {
 
 // Provider Component
 export const SettingsProvider = ({ children }) => {
-    // Determine initial state from localStorage, or default to realtime mockups
-    const [dataSource, setDataSource] = useState(() => {
-        const stored = localStorage.getItem('n8nDataSource');
-        if (stored === 'n8n-api') return 'n8n-server'; // migrate old value
-        return stored || 'realtime-mockup'; // 'mockup', 'realtime-mockup', 'n8n-server'
-    });
+    // Live n8n is now enforced as the default/active source.
+    const [dataSource, setDataSourceState] = useState(LIVE_DATASOURCE);
+    const [clientProfile, setClientProfileState] = useState(readProfileFromStorage);
 
-    // Sync state changes back to localStorage automatically
     useEffect(() => {
-        localStorage.setItem('n8nDataSource', dataSource);
-    }, [dataSource]);
+        localStorage.setItem(DATASOURCE_KEY, LIVE_DATASOURCE);
+    }, []);
 
-    // Construct the context shape exposing states and their setters
-    const contextValue = {
+    const setDataSource = useCallback(() => {
+        setDataSourceState(LIVE_DATASOURCE);
+        localStorage.setItem(DATASOURCE_KEY, LIVE_DATASOURCE);
+    }, []);
+
+    const setClientProfile = useCallback((nextProfile) => {
+        const resolvedProfile = typeof nextProfile === 'function'
+            ? nextProfile(clientProfile)
+            : nextProfile;
+        const normalizedProfile = { ...EMPTY_PROFILE, ...resolvedProfile };
+
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(normalizedProfile));
+        setClientProfileState(normalizedProfile);
+    }, [clientProfile]);
+
+    const contextValue = useMemo(() => ({
         dataSource,
         setDataSource,
-    };
+        clientProfile,
+        setClientProfile,
+    }), [dataSource, setDataSource, clientProfile, setClientProfile]);
 
     return (
         <SettingsContext.Provider value={contextValue}>

@@ -7,7 +7,7 @@ import { N8nClient } from './n8nClient.js';
 import { createApiRouter } from './apiRouter.js';
 
 const isProd = process.argv.includes('--prod');
-const port = Number(process.env.PORT || 5173);
+const preferredPort = Number(process.env.PORT || 5173);
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -31,6 +31,41 @@ async function fileExists(filePath) {
   } catch {
     return false;
   }
+}
+
+async function listenOnAvailablePort(server, startPort, maxAttempts = 20) {
+  let nextPort = Number(startPort) || 5173;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const result = await new Promise((resolve) => {
+      const onError = (error) => {
+        server.off('listening', onListening);
+        resolve({ ok: false, error });
+      };
+
+      const onListening = () => {
+        server.off('error', onError);
+        resolve({ ok: true, port: nextPort });
+      };
+
+      server.once('error', onError);
+      server.once('listening', onListening);
+      server.listen(nextPort);
+    });
+
+    if (result.ok) {
+      return result.port;
+    }
+
+    if (result.error?.code === 'EADDRINUSE') {
+      nextPort += 1;
+      continue;
+    }
+
+    throw result.error;
+  }
+
+  throw new Error(`Unable to bind server after ${maxAttempts} attempts starting from port ${startPort}.`);
 }
 
 async function start() {
@@ -111,9 +146,11 @@ async function start() {
     });
   }
 
-  server.listen(port, () => {
-    console.log(`Dashboard server listening on http://localhost:${port} (${isProd ? 'prod' : 'dev'})`);
-  });
+  const boundPort = await listenOnAvailablePort(server, preferredPort);
+  if (boundPort !== preferredPort) {
+    console.warn(`Port ${preferredPort} is in use. Switched to http://localhost:${boundPort}`);
+  }
+  console.log(`Dashboard server listening on http://localhost:${boundPort} (${isProd ? 'prod' : 'dev'})`);
 }
 
 start().catch((err) => {

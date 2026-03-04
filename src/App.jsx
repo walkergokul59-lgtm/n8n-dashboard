@@ -10,6 +10,7 @@ import InvoiceRuns from "./pages/InvoiceRuns";
 import OrderSync from "./pages/OrderSync";
 import SmsOutreach from "./pages/SmsOutreach";
 import Settings from "./pages/Settings";
+import AdminSettings from "./pages/AdminSettings";
 import Preloader from "./components/Preloader";
 import Login from "./pages/Login";
 import AdminPanel from "./pages/AdminPanel";
@@ -77,17 +78,24 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+function RoleBasedSettings() {
+  const { isAdmin } = useAuth();
+  return isAdmin ? <AdminSettings /> : <Settings />;
+}
+
 function App() {
   const [isBootReady, setIsBootReady] = useState(false);
-  const [showPreloader, setShowPreloader] = useState(true);
+  const [showPreloader, setShowPreloader] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
     const fontsReady = document.fonts?.ready?.catch(() => undefined) ?? Promise.resolve();
+    // Failsafe: never let font loading block app boot indefinitely.
+    const hardTimeout = new Promise((resolve) => setTimeout(resolve, 3000));
 
-    Promise.all([minDelay, fontsReady]).then(() => {
+    Promise.race([Promise.all([minDelay, fontsReady]), hardTimeout]).then(() => {
       if (!cancelled) setIsBootReady(true);
     });
 
@@ -125,7 +133,7 @@ function App() {
                 <Route path="invoice-runs" element={<InvoiceRuns />} />
                 <Route path="order-sync" element={<OrderSync />} />
                 <Route path="sms-outreach" element={<SmsOutreach />} />
-                <Route path="settings" element={<Settings />} />
+                <Route path="settings" element={<RoleBasedSettings />} />
                 <Route
                   path="admin"
                   element={(

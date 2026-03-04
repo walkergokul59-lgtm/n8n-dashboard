@@ -52,9 +52,14 @@ export function AuthProvider({ children }) {
             }
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 const res = await fetch('/api/auth/me', {
                     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
                     cache: 'no-store',
+                    signal: controller.signal,
+                }).finally(() => {
+                    clearTimeout(timeoutId);
                 });
                 if (!res.ok) throw new Error('Session expired');
                 const payload = await res.json();

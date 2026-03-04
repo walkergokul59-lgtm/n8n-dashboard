@@ -6,6 +6,20 @@ function toDate(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function toStartOfDay(value) {
+  const d = toDate(value);
+  if (!d) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toEndOfDay(value) {
+  const d = toDate(value);
+  if (!d) return null;
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 function pickTimestamp(execution) {
   return (
     toDate(execution?.startedAt) ||
@@ -283,4 +297,70 @@ export async function checkHealth(n8n) {
   const started = Date.now();
   await n8n.listWorkflows({ limit: 1 });
   return { ok: true, n8nLatencyMs: Date.now() - started };
+}
+
+export async function countExecutionsInRange(
+  n8n,
+  {
+    from = null,
+    to = null,
+    access = { allowedWorkflowIds: null },
+  } = {}
+) {
+  const now = new Date();
+  const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+  const rangeStart = toStartOfDay(from || defaultFrom);
+  const rangeEnd = toEndOfDay(to || now);
+
+  if (!rangeStart || !rangeEnd) {
+    const err = new Error('Invalid date range. Use YYYY-MM-DD for from/to.');
+    err.status = 400;
+    throw err;
+  }
+
+  if (rangeStart.getTime() > rangeEnd.getTime()) {
+    const err = new Error('Invalid date range. "from" must be before or equal to "to".');
+    err.status = 400;
+    throw err;
+  }
+
+  const allowedWorkflowIds = access?.allowedWorkflowIds ?? null;
+  if (allowedWorkflowIds instanceof Set && allowedWorkflowIds.size === 0) {
+    return {
+      count: 0,
+      from: rangeStart.toISOString(),
+      to: rangeEnd.toISOString(),
+    };
+  }
+
+  let scopedExecutions = [];
+  if (allowedWorkflowIds instanceof Set) {
+    scopedExecutions = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
+      pageSize: 100,
+      maxPagesPerWorkflow: 6,
+      minSince: rangeStart,
+      maxCollected: 5000,
+    });
+  } else {
+    const rawExecutions = await collectExecutionsWindow(n8n, {
+      maxPages: 30,
+      pageSize: 100,
+      minSince: rangeStart,
+    });
+    scopedExecutions = filterExecutions(rawExecutions, allowedWorkflowIds);
+  }
+
+  let count = 0;
+  for (const execution of scopedExecutions) {
+    const ts = pickTimestamp(execution);
+    if (!ts) continue;
+    const ms = ts.getTime();
+    if (ms >= rangeStart.getTime() && ms <= rangeEnd.getTime()) count += 1;
+  }
+
+  return {
+    count,
+    from: rangeStart.toISOString(),
+    to: rangeEnd.toISOString(),
+  };
 }

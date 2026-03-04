@@ -1,5 +1,5 @@
 import { authenticateUser, findUserById, getAllowedWorkflowIds } from './accessControl.js';
-import { buildOverview, checkHealth, listRecentExecutions, listWorkflows } from './dashboardCore.js';
+import { buildOverview, checkHealth, countExecutionsInRange, listRecentExecutions, listWorkflows } from './dashboardCore.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from './rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from './tokenAuth.js';
 import { getQueryParam, readJsonBody, sendJson } from './httpUtils.js';
@@ -124,6 +124,13 @@ export function createApiRouter(n8n) {
           return true;
         }
 
+        if (pathname === '/api/dashboard/executions-count' && method === 'GET') {
+          const from = getQueryParam(req.url, 'from');
+          const to = getQueryParam(req.url, 'to');
+          sendJson(res, 200, await countExecutionsInRange(n8n, { from, to, access }));
+          return true;
+        }
+
         if (pathname === '/api/dashboard/health' && method === 'GET') {
           sendJson(res, 200, await checkHealth(n8n));
           return true;
@@ -174,4 +181,3 @@ export function createApiRouter(n8n) {
     return false;
   };
 }
-
