@@ -77,7 +77,7 @@ export default function InvoiceRuns() {
                     >
                         <div
                             className={cn(
-                                'h-full bg-[#1a1f2e] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden',
+                                'h-full bg-[var(--c-raised)] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden',
                                 metric.borderColor,
                                 'border-y border-r border-y-white/5 border-r-white/5'
                             )}
@@ -86,13 +86,13 @@ export default function InvoiceRuns() {
 
                             <div className="flex justify-between items-start mb-4 relative z-10">
                                 <h3 className="text-gray-400 text-xs font-bold tracking-wider uppercase">{metric.title}</h3>
-                                <div className={cn('p-2 rounded-lg border border-white/5', metric.iconBg, metric.iconColor)}>
+                                <div className={cn('p-2 rounded-lg border border-[var(--c-border-sub)]', metric.iconBg, metric.iconColor)}>
                                     <metric.icon size={20} strokeWidth={2.5} />
                                 </div>
                             </div>
 
                             <div className="relative z-10 mt-2">
-                                <div className="text-3xl font-bold text-white mb-2 tracking-tight">{metric.value}</div>
+                                <div className="text-3xl font-bold text-[var(--c-text)] mb-2 tracking-tight">{metric.value}</div>
                                 {metric.subText && <span className="text-gray-500 font-medium text-sm">{metric.subText}</span>}
                             </div>
                         </div>
@@ -108,9 +108,9 @@ export default function InvoiceRuns() {
             />
 
             {/* Invoice Data Table */}
-            <div className="bg-[#1a1f2e] rounded-xl shadow-lg border border-white/5 w-full overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-white/5">
-                    <h3 className="text-white font-semibold text-lg flex items-center">
+            <div className="bg-[var(--c-raised)] rounded-xl shadow-lg border border-[var(--c-border-sub)] w-full overflow-hidden flex flex-col">
+                <div className="p-6 border-b border-[var(--c-border-sub)]">
+                    <h3 className="text-[var(--c-text)] font-semibold text-lg flex items-center">
                         <FileText className="mr-2 text-primary" size={20} />
                         Recent Invoice Runs
                     </h3>
@@ -119,7 +119,7 @@ export default function InvoiceRuns() {
                 <div className="w-full overflow-x-auto">
                     <table className="w-full text-left min-w-[900px]">
                         <thead>
-                            <tr className="bg-[#141a21]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-white/5">
+                            <tr className="bg-[var(--c-surface)]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-[var(--c-border-sub)]">
                                 <th className="px-6 py-4 w-20 text-center">Run ID</th>
                                 <th className="px-6 py-4 w-32">Invoice ID</th>
                                 <th className="px-6 py-4 w-40">Source</th>
@@ -142,14 +142,14 @@ export default function InvoiceRuns() {
                                 <tr
                                     key={run.runId}
                                     className={cn(
-                                        'border-b border-white/5 last:border-0 transition-colors duration-200 hover:bg-white/5',
-                                        index % 2 === 0 ? 'bg-transparent' : 'bg-[#141a21]/30'
+                                        'border-b border-[var(--c-border-sub)] last:border-0 transition-colors duration-200 hover:bg-white/5',
+                                        index % 2 === 0 ? 'bg-transparent' : 'bg-[var(--c-surface)]/30'
                                     )}
                                 >
                                     <td className="px-6 py-4 text-center text-gray-300 font-mono text-xs">{run.runId}</td>
                                     <td className="px-6 py-4 text-[#00d9ff] font-bold font-mono text-xs">{run.invoiceId}</td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-[#2a3441] text-gray-300 border border-white/10">
+                                        <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-[#2a3441] text-gray-300 border border-[var(--c-border-light)]">
                                             {run.source.replace('_', ' ')}
                                         </span>
                                     </td>

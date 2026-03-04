@@ -38,42 +38,42 @@ export default function AIAgentLogs() {
     return (
         <div className="space-y-6 pb-10">
             {/* Header & Stats Summary */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#1a1f2e] p-6 rounded-xl border border-white/5 shadow-lg relative overflow-hidden group">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--c-raised)] p-6 rounded-xl border border-[var(--c-border-sub)] shadow-lg relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div>
-                    <h2 className="text-xl font-bold text-white mb-1">AI Agent Logs</h2>
+                    <h2 className="text-xl font-bold text-[var(--c-text)] mb-1">AI Agent Logs</h2>
                     <p className="text-sm text-gray-400">Detailed interaction logs between users and AI agents</p>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
-                    <div className="bg-[#141a21] px-4 py-2 rounded-lg border border-white/5 flex items-center">
+                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
                         <div className="mr-3 p-1.5 bg-indigo-500/10 rounded-md text-indigo-400">
                             <Bot size={16} />
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Conversations</p>
-                            <p className="text-white font-semibold">{stats.totalConversations}</p>
+                            <p className="text-[var(--c-text)] font-semibold">{stats.totalConversations}</p>
                         </div>
                     </div>
 
-                    <div className="bg-[#141a21] px-4 py-2 rounded-lg border border-white/5 flex items-center">
+                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
                         <div className="mr-3 p-1.5 bg-amber-500/10 rounded-md text-amber-400">
                             <Clock size={16} />
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Duration</p>
-                            <p className="text-white font-semibold">{stats.totalDuration}ms</p>
+                            <p className="text-[var(--c-text)] font-semibold">{stats.totalDuration}ms</p>
                         </div>
                     </div>
 
-                    <div className="bg-[#141a21] px-4 py-2 rounded-lg border border-white/5 flex items-center">
+                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
                         <div className="mr-3 p-1.5 bg-emerald-500/10 rounded-md text-emerald-400">
                             <DollarSign size={16} />
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Cost</p>
-                            <p className="text-white font-semibold">${stats.totalCost}</p>
+                            <p className="text-[var(--c-text)] font-semibold">${stats.totalCost}</p>
                         </div>
                     </div>
                 </div>
@@ -86,9 +86,9 @@ export default function AIAgentLogs() {
                 ) : null}
 
                 {logsList.map((log) => (
-                    <div key={log.threadId} className="bg-[#1a1f2e] rounded-xl border border-white/5 shadow-md overflow-hidden">
+                    <div key={log.threadId} className="bg-[var(--c-raised)] rounded-xl border border-[var(--c-border-sub)] shadow-md overflow-hidden">
                         {/* Thread Header Metadata */}
-                        <div className="bg-[#141a21]/80 px-6 py-3 border-b border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs">
+                        <div className="bg-[var(--c-surface)]/80 px-6 py-3 border-b border-[var(--c-border-sub)] flex flex-wrap items-center justify-between gap-4 text-xs">
                             <div className="flex items-center text-gray-400 font-mono">
                                 <span className="text-gray-500 mr-2">THREAD ID</span>
                                 <span className="text-primary truncate max-w-[150px] sm:max-w-none" title={log.threadId}>
@@ -121,7 +121,7 @@ export default function AIAgentLogs() {
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="text-xs font-bold text-slate-400 mb-1 tracking-wide">USER</h4>
-                                    <div className="bg-[#141a21] border border-white/5 rounded-2xl rounded-tl-sm p-4 text-gray-200 text-sm shadow-sm inline-block max-w-[85%] leading-relaxed">
+                                    <div className="bg-[var(--c-surface)] border border-[var(--c-border-sub)] rounded-2xl rounded-tl-sm p-4 text-[var(--c-text-dim)] text-sm shadow-sm inline-block max-w-[85%] leading-relaxed">
                                         {log.question}
                                     </div>
                                 </div>

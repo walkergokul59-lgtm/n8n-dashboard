@@ -1,6 +1,6 @@
 import { getN8nClient } from './_client.js';
 import { buildOverview } from '../../server/dashboardCore.js';
-import { requireUser } from '../_lib/auth.js';
+import { applyRequestedWorkflowScope, requireUser } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     }
 
     const n8n = getN8nClient();
-    const data = await buildOverview(n8n, auth.access);
+    const scopedAccess = applyRequestedWorkflowScope(req, auth.access);
+    const data = await buildOverview(n8n, scopedAccess);
     res.status(200).json(data);
   } catch (err) {
     res.status(Number.isFinite(err?.status) ? err.status : 500).json({ error: err?.message || String(err) });

@@ -80,7 +80,7 @@ RBAC_KV_KEY=n8n:rbac                      # (optional) KV key prefix (default: n
 - `/invoice-runs` — Invoice processing execution history
 - `/order-sync` — Order synchronization status
 - `/sms-outreach` — SMS campaign execution logs
-- `/settings` — App configuration (data source mode, n8n instance URL)
+- `/settings` — App configuration (data source mode, n8n instance URL); renders `AdminSettings.jsx` for admins or `Settings.jsx` for clients
 - `/admin` — Admin panel (users, roles, workflow allowlists) — **admin-only**
 - `/login` — Authentication page (shown if not logged in)
 
@@ -106,8 +106,9 @@ No `tailwind.config.js` — uses `@tailwindcss/vite` plugin. Use `clsx` + `tailw
 
 ### Visual Components & Effects
 
-- **Animations**: GSAP for smooth transitions (preloader, scroll)
-- **Effect Layers**: `PixelBlast`, `LightPillar`, `ChromaGrid` (visual overlays)
+- **Animations**: GSAP for smooth transitions (preloader, scroll); `react-countup`/`countup.js` for animated KPI numbers
+- **3D Effects**: Three.js + `postprocessing` used in effect components
+- **Effect Layers**: `PixelBlast`, `LightPillar`, `ChromaGrid` (visual overlays in `src/components/`)
 - **Preloader**: Boot screen with font readiness check (min 900ms, waits for fonts)
 - **Charts**: `recharts` (AreaChart, used in `ExecutionVolumeChart`)
 - **Icons**: `lucide-react`
@@ -158,7 +159,10 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 - **`server/accessControl.js`** — Functions to check user permissions, get allowed workflow IDs
 - **`server/tokenAuth.js`** — JWT token validation & extraction from requests
 - **`server/rbacStore.js`** — In-memory (dev) or KV (Vercel) storage for user/client/workflow mappings
-- **`src/context/AuthContext.jsx`** — Frontend auth state (token in localStorage as `n8nDashboardAuthToken`)
+- **`src/context/auth-context.js`** — Raw React context object (created here, consumed elsewhere)
+- **`src/context/AuthContext.jsx`** — Auth provider component + `apiFetch` helper; token stored in localStorage as `n8nDashboardAuthToken`
+- **`src/context/useAuth.js`** — `useAuth()` hook to consume `AuthContext`
+- **`src/hooks/useDashboardOverviewSse.js`** — SSE hook connecting to `/api/dashboard/stream` for real-time updates
 
 **Test Users** (in-memory RBAC, reset on server restart):
 - Admin: `root@gmail.com` / `root`

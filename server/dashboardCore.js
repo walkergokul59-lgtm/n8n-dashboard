@@ -172,18 +172,10 @@ export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) 
     };
   }
 
-  let scopedExecutions = [];
-  if (allowedWorkflowIds instanceof Set) {
-    scopedExecutions = await collectExecutionsForWorkflowIds(n8n, allowedWorkflowIds, {
-      pageSize: 100,
-      maxPagesPerWorkflow: 2,
-      minSince: since48h,
-      maxCollected: 400,
-    });
-  } else {
-    const rawExecutions = await collectExecutionsWindow(n8n, { maxPages: 5, minSince: since48h });
-    scopedExecutions = filterExecutions(rawExecutions, allowedWorkflowIds);
-  }
+  // Always use a paginated window fetch + filter. This is faster and more reliable than
+  // per-workflow fetching (which requires N parallel API calls and fails on slow n8n instances).
+  const rawExecutions = await collectExecutionsWindow(n8n, { maxPages: 10, minSince: since48h });
+  const scopedExecutions = filterExecutions(rawExecutions, allowedWorkflowIds);
 
   const last48h = scopedExecutions
     .map((ex) => ({ ex, ts: pickTimestamp(ex) }))
@@ -212,7 +204,7 @@ export async function buildOverview(n8n, access = { allowedWorkflowIds: null }) 
 
   return {
     volumeData: buildHourlySeries(now, current24, 24),
-    totalExecutions: currentTotal,
+    totalExecutions: scopedExecutions.length,
     executionsChange: Math.round(percentChange(currentTotal, prevTotal)),
     totalCost: 0,
     costChange: 0,

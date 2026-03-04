@@ -143,83 +143,83 @@ export default function Settings() {
                 </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-[#141a21]/70 overflow-hidden">
-                <div className="border-b border-white/10 px-6 py-5">
-                    <h3 className="text-lg font-bold text-white">Client Profile Details</h3>
+            <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/70 overflow-hidden">
+                <div className="border-b border-[var(--c-border-light)] px-6 py-5">
+                    <h3 className="text-lg font-bold text-[var(--c-text)]">Client Profile Details</h3>
                     <p className="text-sm text-gray-400">All fields below are mandatory. Saved profile image appears in the top-right header.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-gray-200">Client Name *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Client Name *</span>
                             <input
                                 type="text"
                                 name="clientName"
                                 required
                                 value={formData.clientName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                                 placeholder="Enter client name"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-gray-200">Contact Number *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Contact Number *</span>
                             <input
                                 type="tel"
                                 name="contactNumber"
                                 required
                                 value={formData.contactNumber}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                                 placeholder="+1 000 000 0000"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-gray-200">Business Name *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Business Name *</span>
                             <input
                                 type="text"
                                 name="businessName"
                                 required
                                 value={formData.businessName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                                 placeholder="Enter business name"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-gray-200">Primary Email *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Primary Email *</span>
                             <input
                                 type="email"
                                 name="primaryEmail"
                                 required
                                 value={formData.primaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                                 placeholder="primary@business.com"
                             />
                         </label>
 
                         <label className="space-y-2 md:col-span-2">
-                            <span className="text-sm font-medium text-gray-200">Secondary Email *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Secondary Email *</span>
                             <input
                                 type="email"
                                 name="secondaryEmail"
                                 required
                                 value={formData.secondaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-white/10 bg-[#0f1419] px-3 py-2.5 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                                 placeholder="support@business.com"
                             />
                         </label>
                     </div>
 
-                    <div className="rounded-lg border border-white/10 bg-[#0f1419] p-4">
+                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] p-4">
                         <div className="flex flex-wrap items-center gap-4">
-                            <div className="w-16 h-16 rounded-full overflow-hidden border border-white/20 bg-[#1a222a] flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full overflow-hidden border border-white/20 bg-[var(--c-hover)] flex items-center justify-center">
                                 {formData.profileImage ? (
                                     <img src={formData.profileImage} alt="Client profile" className="h-full w-full object-cover" />
                                 ) : (
@@ -228,13 +228,13 @@ export default function Settings() {
                             </div>
 
                             <label className="space-y-2 flex-1 min-w-[240px]">
-                                <span className="text-sm font-medium text-gray-200">Profile Image *</span>
+                                <span className="text-sm font-medium text-[var(--c-text-dim)]">Profile Image *</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={handleImageChange}
                                     required={!formData.profileImage}
-                                    className="block w-full cursor-pointer rounded-lg border border-white/10 bg-[#141a21] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[#00d9ff]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7cf3ff]"
+                                    className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[#00d9ff]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7cf3ff]"
                                 />
                             </label>
                         </div>
@@ -244,7 +244,7 @@ export default function Settings() {
                         <p className="text-xs text-gray-500">Mandatory fields are marked with *</p>
                         <button
                             type="submit"
-                            className="inline-flex items-center rounded-lg bg-[#00d9ff] px-4 py-2 text-sm font-semibold text-[#0f1419] transition hover:bg-[#28e0ff] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center rounded-lg bg-[#00d9ff] px-4 py-2 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[#28e0ff] disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={!isFormValid}
                         >
                             <Save size={16} className="mr-2" />

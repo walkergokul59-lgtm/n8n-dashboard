@@ -13,7 +13,7 @@ import { Loader2 } from 'lucide-react';
 function CustomTooltipContent({ active, payload, label }) {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-[#1a222a] border border-white/10 p-3 rounded-lg shadow-xl">
+            <div className="bg-[var(--c-hover)] border border-[var(--c-border-light)] p-3 rounded-lg shadow-xl">
                 <p className="text-gray-400 text-xs mb-1">{`Time: ${label}`}</p>
                 <p className="text-[#00d9ff] font-bold">
                     {`Requests: ${payload[0].value}`}
@@ -51,8 +51,8 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
         : [];
 
     return (
-        <div className="bg-[#1a1f2e] rounded-xl p-6 shadow-lg border border-white/5 w-full lg:w-[60%] h-[350px] flex flex-col">
-            <h3 className="text-white font-semibold text-lg mb-6">Execution Volume</h3>
+        <div className="bg-[var(--c-raised)] rounded-xl p-6 shadow-lg border border-[var(--c-border-sub)] w-full lg:w-[60%] h-[350px] flex flex-col">
+            <h3 className="text-[var(--c-text)] font-semibold text-lg mb-6">Execution Volume</h3>
 
             {isLoading ? (
                 <div className="flex-1 w-full h-full flex flex-col items-center justify-center min-h-[250px] opacity-50">
@@ -107,7 +107,7 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                                 fillOpacity={1}
                                 fill="url(#colorRequests)"
                                 animationDuration={1000}
-                                activeDot={{ r: 6, fill: '#1a1f2e', stroke: '#00d9ff', strokeWidth: 2 }}
+                                activeDot={{ r: 6, fill: 'var(--c-raised)', stroke: '#00d9ff', strokeWidth: 2 }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>

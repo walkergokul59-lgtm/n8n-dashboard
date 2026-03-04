@@ -111,7 +111,7 @@ export default function OrderSync() {
                     >
                         <div
                             className={cn(
-                                'h-full bg-[#1a1f2e] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden',
+                                'h-full bg-[var(--c-raised)] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden',
                                 metric.borderColor,
                                 'border-y border-r border-y-white/5 border-r-white/5'
                             )}
@@ -120,13 +120,13 @@ export default function OrderSync() {
 
                             <div className="flex justify-between items-start mb-4 relative z-10">
                                 <h3 className="text-gray-400 text-xs font-bold tracking-wider uppercase">{metric.title}</h3>
-                                <div className={cn('p-2 rounded-lg border border-white/5', metric.iconBg, metric.iconColor)}>
+                                <div className={cn('p-2 rounded-lg border border-[var(--c-border-sub)]', metric.iconBg, metric.iconColor)}>
                                     <metric.icon size={20} strokeWidth={2.5} />
                                 </div>
                             </div>
 
                             <div className="relative z-10 mt-2">
-                                <div className="text-3xl font-bold text-white mb-2 tracking-tight">{metric.value}</div>
+                                <div className="text-3xl font-bold text-[var(--c-text)] mb-2 tracking-tight">{metric.value}</div>
                                 {metric.subText && <span className="text-gray-500 font-medium text-sm">{metric.subText}</span>}
                             </div>
                         </div>
@@ -142,11 +142,11 @@ export default function OrderSync() {
             />
 
             {/* Order Sync Data Table */}
-            <div className="bg-[#1a1f2e] rounded-xl shadow-lg border border-white/5 w-full overflow-hidden flex flex-col">
+            <div className="bg-[var(--c-raised)] rounded-xl shadow-lg border border-[var(--c-border-sub)] w-full overflow-hidden flex flex-col">
                 <div className="w-full overflow-x-auto">
                     <table className="w-full text-left min-w-[900px]">
                         <thead>
-                            <tr className="bg-[#141a21]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-white/5">
+                            <tr className="bg-[var(--c-surface)]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-[var(--c-border-sub)]">
                                 <th onClick={() => handleSort('runId')} className="px-6 py-4 w-20 text-center cursor-pointer hover:bg-white/5 group transition-colors">
                                     <div className="flex items-center justify-center">Run ID <SortIcon columnKey="runId" /></div>
                                 </th>
@@ -175,12 +175,12 @@ export default function OrderSync() {
                                 <tr
                                     key={order.runId}
                                     className={cn(
-                                        'border-b border-white/5 last:border-0 transition-colors duration-200 hover:bg-white/5',
-                                        index % 2 === 0 ? 'bg-transparent' : 'bg-[#141a21]/30'
+                                        'border-b border-[var(--c-border-sub)] last:border-0 transition-colors duration-200 hover:bg-white/5',
+                                        index % 2 === 0 ? 'bg-transparent' : 'bg-[var(--c-surface)]/30'
                                     )}
                                 >
                                     <td className="px-6 py-4 text-center text-gray-300 font-mono text-xs">{order.runId}</td>
-                                    <td className="px-6 py-4 text-white font-mono text-xs font-bold">{order.orderId}</td>
+                                    <td className="px-6 py-4 text-[var(--c-text)] font-mono text-xs font-bold">{order.orderId}</td>
 
                                     <td className="px-6 py-4 text-center text-xs">
                                         <span

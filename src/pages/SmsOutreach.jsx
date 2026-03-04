@@ -101,7 +101,7 @@ export default function SmsOutreach() {
                         <div
                             key={i}
                             className={cn(
-                                'bg-[#1a1f2e] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 relative overflow-hidden group',
+                                'bg-[var(--c-raised)] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 relative overflow-hidden group',
                                 metric.borderColor,
                                 'border-y border-r border-y-white/5 border-r-white/5'
                             )}
@@ -113,13 +113,13 @@ export default function SmsOutreach() {
 
                         <div className="flex justify-between items-start mb-4 relative z-10">
                             <h3 className="text-gray-400 text-xs font-bold tracking-wider uppercase">{metric.title}</h3>
-                            <div className={cn('p-2 rounded-lg border border-white/5', metric.iconBg, metric.iconColor)}>
+                            <div className={cn('p-2 rounded-lg border border-[var(--c-border-sub)]', metric.iconBg, metric.iconColor)}>
                                 <Icon size={20} className={isLoading ? "animate-pulse" : ""} strokeWidth={2.5} />
                             </div>
                         </div>
 
                         <div className="relative z-10 mt-2">
-                            <div className="text-3xl font-bold text-white mb-2 tracking-tight transition-all duration-300">
+                            <div className="text-3xl font-bold text-[var(--c-text)] mb-2 tracking-tight transition-all duration-300">
                                 {metric.value}
                             </div>
                         </div>
@@ -129,11 +129,11 @@ export default function SmsOutreach() {
             </div>
 
             {/* Network Visualization Area */}
-            <div className="flex-1 min-h-[500px] bg-[#1a1f2e] rounded-xl shadow-lg border border-white/5 overflow-hidden flex flex-col relative group">
+            <div className="flex-1 min-h-[500px] bg-[var(--c-raised)] rounded-xl shadow-lg border border-[var(--c-border-sub)] overflow-hidden flex flex-col relative group">
 
                 {/* Header Area */}
-                <div className="p-6 border-b border-white/5 relative z-20 bg-[#1a1f2e]/80 backdrop-blur-sm">
-                    <h3 className="text-white font-semibold text-lg flex items-center">
+                <div className="p-6 border-b border-[var(--c-border-sub)] relative z-20 bg-[var(--c-raised)]/80 backdrop-blur-sm">
+                    <h3 className="text-[var(--c-text)] font-semibold text-lg flex items-center">
                         <Send className="mr-2 text-fuchsia-400" size={20} />
                         Global Delivery Network
                     </h3>
@@ -197,7 +197,7 @@ export default function SmsOutreach() {
                 </div>
 
                 {/* Optional subtle overlay gradient over the bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#1a1f2e] to-transparent z-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[var(--c-raised)] to-transparent z-20 pointer-events-none" />
             </div>
         </div>
     );

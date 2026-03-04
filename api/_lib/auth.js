@@ -1,4 +1,4 @@
-import { authenticateUser, findUserById, getAllowedWorkflowIds } from '../../server/accessControl.js';
+import { applyWorkflowSelection, authenticateUser, findUserById, getAllowedWorkflowIds } from '../../server/accessControl.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from '../../server/rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from '../../server/tokenAuth.js';
 
@@ -52,6 +52,13 @@ export async function requireUser(req) {
   return { user, config, access: { allowedWorkflowIds: getAllowedWorkflowIds(config, user) } };
 }
 
+export function applyRequestedWorkflowScope(req, access) {
+  const selectedWorkflowIds = req?.query?.workflowIds || null;
+  return {
+    allowedWorkflowIds: applyWorkflowSelection(access?.allowedWorkflowIds ?? null, selectedWorkflowIds),
+  };
+}
+
 export async function readAdminRbac() {
   const config = await readRbacConfig();
   return sanitizeRbacConfigForAdmin(config);
@@ -61,4 +68,3 @@ export async function writeAdminRbac(next) {
   const saved = await writeRbacConfig(next);
   return sanitizeRbacConfigForAdmin(saved);
 }
-

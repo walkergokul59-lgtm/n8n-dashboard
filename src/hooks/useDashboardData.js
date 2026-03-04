@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/useAuth';
 
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 /**
  * Custom hook to simulate fetching data from an API with loading states,

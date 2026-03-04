@@ -1,9 +1,15 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Activity } from "lucide-react";
 import { getAIAgentLogs } from "../utils/mock-data";
 import { useDashboardData } from "../hooks/useDashboardData";
 
-export default function RecentActivityTable() {
+function buildWorkflowQuery(selectedWorkflowIds) {
+    const normalized = [...new Set((selectedWorkflowIds || []).map((id) => String(id).trim()).filter(Boolean))];
+    if (normalized.length === 0) return "";
+    return `workflowIds=${encodeURIComponent(normalized.join(","))}`;
+}
+
+export default function RecentActivityTable({ selectedWorkflowIds = [], refreshNonce = 0 }) {
     const [expandedRows, setExpandedRows] = useState(new Set());
 
     // Toggle row expansion state
@@ -36,9 +42,18 @@ export default function RecentActivityTable() {
 
     const fetchMockExecutions = useCallback(() => mockExecutions, [mockExecutions]);
     const fetchMockWorkflows = useCallback(() => mockWorkflows, [mockWorkflows]);
+    const workflowQuery = useMemo(() => buildWorkflowQuery(selectedWorkflowIds), [selectedWorkflowIds]);
+    const recentExecutionsEndpoint = workflowQuery ? `/dashboard/recent-executions?${workflowQuery}` : '/dashboard/recent-executions';
+    const workflowsEndpoint = workflowQuery ? `/dashboard/workflows?${workflowQuery}` : '/dashboard/workflows';
 
-    const { data, isLoading } = useDashboardData(fetchMockExecutions, '/dashboard/recent-executions');
-    const { data: workflowsData } = useDashboardData(fetchMockWorkflows, '/dashboard/workflows');
+    const { data, isLoading, refetch: refetchRecentExecutions } = useDashboardData(fetchMockExecutions, recentExecutionsEndpoint);
+    const { data: workflowsData, refetch: refetchWorkflows } = useDashboardData(fetchMockWorkflows, workflowsEndpoint);
+
+    useEffect(() => {
+        if (!refreshNonce) return;
+        void refetchRecentExecutions();
+        void refetchWorkflows();
+    }, [refreshNonce, refetchRecentExecutions, refetchWorkflows]);
 
     const activities = Array.isArray(data?.data) ? data.data : [];
     const workflowNameById = useMemo(() => {
@@ -58,10 +73,10 @@ export default function RecentActivityTable() {
     };
 
     return (
-        <div className="bg-[#1a1f2e] rounded-xl shadow-lg border border-white/5 w-full overflow-hidden mt-6 flex flex-col">
-            <div className="p-6 pb-4 border-b border-white/5">
+        <div className="bg-[var(--c-raised)] rounded-xl shadow-lg border border-[var(--c-border-sub)] w-full overflow-hidden mt-6 flex flex-col">
+            <div className="p-6 pb-4 border-b border-[var(--c-border-sub)]">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-white font-semibold text-lg">Recent Executions</h3>
+                    <h3 className="text-[var(--c-text)] font-semibold text-lg">Recent Executions</h3>
                     {isLoading ? <span className="text-xs text-gray-500">Loading…</span> : null}
                 </div>
             </div>
@@ -69,7 +84,7 @@ export default function RecentActivityTable() {
             <div className="w-full overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
-                        <tr className="bg-[#141a21]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-white/5">
+                        <tr className="bg-[var(--c-surface)]/80 text-xs uppercase tracking-wider text-gray-400 font-semibold border-b border-[var(--c-border-sub)]">
                             <th className="px-6 py-4 w-16 text-center">ID</th>
                             <th className="px-6 py-4 w-1/3">Workflow</th>
                             <th className="px-6 py-4">Status</th>
@@ -92,7 +107,7 @@ export default function RecentActivityTable() {
                                     onClick={() => toggleRow(activity.id)}
                                     className={`
                                         cursor-pointer transition-all duration-200 hover:bg-white/10 group
-                                        ${index % 2 === 0 ? 'bg-transparent' : 'bg-[#141a21]/30'}
+                                        ${index % 2 === 0 ? 'bg-transparent' : 'bg-[var(--c-surface)]/30'}
                                         ${expandedRows.has(activity.id) ? 'bg-[#00d9ff]/5' : ''}
                                     `}
                                 >
@@ -105,7 +120,7 @@ export default function RecentActivityTable() {
                                     <td className="px-6 py-4 text-gray-300 font-mono text-xs truncate max-w-[200px]" title={activity.workflowId || ""}>
                                         {activity.workflowId ? (workflowNameById.get(String(activity.workflowId)) || String(activity.workflowId)) : "-"}
                                     </td>
-                                    <td className="px-6 py-4 text-white truncate max-w-[300px]" title={activity.status || ""}>
+                                    <td className="px-6 py-4 text-[var(--c-text)] truncate max-w-[300px]" title={activity.status || ""}>
                                         {activity.status || "-"}
                                     </td>
                                     <td className="px-6 py-4 text-amber-400 text-right font-mono">
@@ -118,14 +133,14 @@ export default function RecentActivityTable() {
 
                                 {/* Expanded Row Content */}
                                 {expandedRows.has(activity.id) && (
-                                    <tr className="bg-[#0f1419] border-b border-white/5 border-t border-t-white/5">
+                                    <tr className="bg-[var(--c-bg)] border-b border-[var(--c-border-sub)] border-t border-t-[var(--c-border-sub)]">
                                         <td colSpan="5" className="p-0">
                                             <div className="px-12 py-6 animate-in slide-in-from-top-2 fade-in duration-200">
                                                 <div className="flex items-center mb-4 text-[#00d9ff] font-semibold text-xs tracking-wider uppercase">
                                                     <Activity size={14} className="mr-2" />
                                                     Execution Details
                                                 </div>
-                                                <pre className="bg-[#141a21]/50 p-4 rounded-lg border border-white/5 mx-4 mb-2 text-xs text-gray-300 overflow-auto">
+                                                <pre className="bg-[var(--c-surface)]/50 p-4 rounded-lg border border-[var(--c-border-sub)] mx-4 mb-2 text-xs text-gray-300 overflow-auto">
                                                     {JSON.stringify(activity, null, 2)}
                                                 </pre>
                                             </div>

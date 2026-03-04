@@ -1,4 +1,4 @@
-import { Zap, CalendarDays, CheckCircle2, Clock, RefreshCw } from 'lucide-react';
+import { Zap, CalendarDays, CheckCircle2, Clock, RefreshCw, ChevronDown } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CountUpModule from 'react-countup';
 import { clsx } from "clsx";
@@ -35,7 +35,13 @@ const defaultRange = () => {
         to: formatDateInput(now),
     };
 };
-const RANGE_REQUEST_TIMEOUT_MS = 12000;
+const RANGE_REQUEST_TIMEOUT_MS = 30000;
+const WORKFLOWS_MOCK_FETCHER = () => ({ data: [] });
+
+const buildWorkflowParam = (selectedWorkflowIds) => {
+    const normalized = [...new Set((selectedWorkflowIds || []).map((id) => String(id).trim()).filter(Boolean))];
+    return normalized.join(",");
+};
 
 const isAbortLikeError = (error) => {
     if (!error) return false;
@@ -51,7 +57,7 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", icon, iconC
 
     return (
         <div className={cn(
-            "bg-[#1a1f2e] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group",
+            "bg-[var(--c-raised)] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group",
             borderColor
         )}>
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
@@ -62,7 +68,7 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", icon, iconC
                 </div>
             </div>
             <div className="flex flex-col z-20">
-                <div className="text-3xl font-bold text-white mb-2">
+                <div className="text-3xl font-bold text-[var(--c-text)] mb-2">
                     {isCurrency && <span className="text-xl mr-1">$</span>}
                     {canAnimate ? (
                         <CountUp
@@ -86,25 +92,117 @@ export default function Dashboard() {
     const showSystemHealthCard = false;
     const { dataSource } = useSettings();
     const { apiFetch } = useAuth();
+    const [selectedWorkflowIds, setSelectedWorkflowIds] = useState([]);
+    const [isWorkflowPickerOpen, setIsWorkflowPickerOpen] = useState(false);
+    const [workflowSearch, setWorkflowSearch] = useState("");
+    const [workflowMenuStyle, setWorkflowMenuStyle] = useState({ top: 0, left: 0, width: 320 });
     const [executionRange, setExecutionRange] = useState(defaultRange);
     const [rangeCount, setRangeCount] = useState(0);
     const [isRangeLoading, setIsRangeLoading] = useState(false);
     const [rangeError, setRangeError] = useState("");
     const [refreshNonce, setRefreshNonce] = useState(0);
     const rootRef = useRef(null);
+    const workflowPickerRef = useRef(null);
+    const workflowMenuRef = useRef(null);
 
-    const http = useDashboardData(getWorkflowMetrics, '/dashboard/overview');
+    const selectedWorkflowParam = useMemo(() => buildWorkflowParam(selectedWorkflowIds), [selectedWorkflowIds]);
+    const workflowQuery = selectedWorkflowParam ? `workflowIds=${encodeURIComponent(selectedWorkflowParam)}` : "";
+    const overviewEndpoint = workflowQuery ? `/dashboard/overview?${workflowQuery}` : '/dashboard/overview';
+    const workflowsEndpoint = '/dashboard/workflows';
+
+    const http = useDashboardData(getWorkflowMetrics, overviewEndpoint);
+    const workflowsPayload = useDashboardData(WORKFLOWS_MOCK_FETCHER, workflowsEndpoint);
+    const workflows = useMemo(() => {
+        return Array.isArray(workflowsPayload?.data?.data) ? workflowsPayload.data.data : [];
+    }, [workflowsPayload?.data?.data]);
+    const selectedWorkflowSet = useMemo(() => new Set((selectedWorkflowIds || []).map((id) => String(id))), [selectedWorkflowIds]);
+    const filteredWorkflows = useMemo(() => {
+        const search = String(workflowSearch || "").trim().toLowerCase();
+        if (!search) return workflows;
+        return workflows.filter((workflow) => {
+            const name = String(workflow?.name || "").toLowerCase();
+            const id = String(workflow?.id || "").toLowerCase();
+            return name.includes(search) || id.includes(search);
+        });
+    }, [workflows, workflowSearch]);
 
     const data = http.data;
     const isLoading = http.isLoading;
     const isRefetching = http.isRefetching;
     const loadError = http.error;
     const refetch = http.refetch;
+    const refetchWorkflows = workflowsPayload.refetch;
 
     const handleManualRefresh = async () => {
         setRefreshNonce((previous) => previous + 1);
-        await refetch();
+        await Promise.all([refetch(), refetchWorkflows()]);
     };
+
+    const toggleWorkflowSelection = (workflowId) => {
+        const normalizedId = String(workflowId);
+        setSelectedWorkflowIds((previous) => {
+            const nextSet = new Set((previous || []).map((id) => String(id)));
+            if (nextSet.has(normalizedId)) nextSet.delete(normalizedId);
+            else nextSet.add(normalizedId);
+            return [...nextSet];
+        });
+    };
+
+    const selectAllVisibleWorkflows = () => {
+        const visibleIds = filteredWorkflows.map((workflow) => String(workflow.id));
+        setSelectedWorkflowIds((previous) => {
+            const nextSet = new Set((previous || []).map((id) => String(id)));
+            for (const workflowId of visibleIds) nextSet.add(workflowId);
+            return [...nextSet];
+        });
+    };
+
+    const clearWorkflowSelection = () => {
+        setSelectedWorkflowIds([]);
+    };
+
+    useEffect(() => {
+        if (!isWorkflowPickerOpen) return;
+
+        const updateMenuPosition = () => {
+            const pickerEl = workflowPickerRef.current;
+            if (!pickerEl) return;
+
+            const rect = pickerEl.getBoundingClientRect();
+            const viewportPadding = 8;
+            const width = Math.max(320, Math.round(rect.width));
+            const maxLeft = Math.max(viewportPadding, window.innerWidth - width - viewportPadding);
+            const left = Math.min(Math.max(viewportPadding, rect.left), maxLeft);
+            const top = Math.min(rect.bottom + 8, window.innerHeight - viewportPadding);
+
+            setWorkflowMenuStyle({ top, left, width });
+        };
+
+        const onPointerDown = (event) => {
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (workflowPickerRef.current?.contains(target)) return;
+            if (workflowMenuRef.current?.contains(target)) return;
+            setIsWorkflowPickerOpen(false);
+        };
+
+        const onKeyDown = (event) => {
+            if (event.key === "Escape") setIsWorkflowPickerOpen(false);
+        };
+
+        updateMenuPosition();
+        window.addEventListener("resize", updateMenuPosition);
+        window.addEventListener("scroll", updateMenuPosition, true);
+        document.addEventListener("pointerdown", onPointerDown);
+        document.addEventListener("keydown", onKeyDown);
+
+        return () => {
+            window.removeEventListener("resize", updateMenuPosition);
+            window.removeEventListener("scroll", updateMenuPosition, true);
+            document.removeEventListener("pointerdown", onPointerDown);
+            document.removeEventListener("keydown", onKeyDown);
+        };
+    }, [isWorkflowPickerOpen]);
 
     useEffect(() => {
         const from = executionRange.from;
@@ -151,6 +249,9 @@ export default function Dashboard() {
             try {
                 const timeoutId = setTimeout(() => controller.abort(), RANGE_REQUEST_TIMEOUT_MS);
                 const params = new URLSearchParams({ from, to });
+                if (selectedWorkflowParam) {
+                    params.set("workflowIds", selectedWorkflowParam);
+                }
                 const response = await apiFetch(`/api/dashboard/executions-count?${params.toString()}`, {
                     headers: { Accept: "application/json" },
                     signal: controller.signal,
@@ -181,7 +282,7 @@ export default function Dashboard() {
             cancelled = true;
             controller.abort();
         };
-    }, [executionRange.from, executionRange.to, apiFetch, dataSource, refreshNonce]);
+    }, [executionRange.from, executionRange.to, selectedWorkflowParam, apiFetch, dataSource, refreshNonce]);
 
     const rangeSummary = useMemo(() => {
         if (isRangeLoading) return "Loading execution count...";
@@ -262,8 +363,84 @@ export default function Dashboard() {
                 </div>
             )}
 
-            <div data-gsap="reveal" className="rounded-xl border border-white/10 bg-[#141a21]/80 p-4">
+            <div data-gsap="reveal" className="relative z-[70] rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 p-4">
                 <div className="flex flex-wrap items-end gap-4">
+                    <div ref={workflowPickerRef} className="relative">
+                        <label className="flex flex-col gap-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Workflows</span>
+                            <button
+                                type="button"
+                                onClick={() => setIsWorkflowPickerOpen((current) => !current)}
+                                className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[#00d9ff]/80"
+                            >
+                                <span className="truncate">
+                                    {selectedWorkflowIds.length > 0
+                                        ? `${selectedWorkflowIds.length} selected`
+                                        : "All accessible workflows"}
+                                </span>
+                                <ChevronDown size={14} className={`ml-2 shrink-0 transition-transform ${isWorkflowPickerOpen ? "rotate-180" : ""}`} />
+                            </button>
+                        </label>
+
+                        {isWorkflowPickerOpen ? (
+                            <div
+                                ref={workflowMenuRef}
+                                className="fixed z-[1000] rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] shadow-xl"
+                                style={{ top: `${workflowMenuStyle.top}px`, left: `${workflowMenuStyle.left}px`, width: `${workflowMenuStyle.width}px` }}
+                            >
+                                <div className="border-b border-[var(--c-border-light)] p-2">
+                                    <input
+                                        type="text"
+                                        value={workflowSearch}
+                                        onChange={(event) => setWorkflowSearch(event.target.value)}
+                                        placeholder="Search by workflow name or id"
+                                        className="w-full rounded-md border border-[var(--c-border-light)] bg-[var(--c-surface)] px-2 py-1.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between border-b border-[var(--c-border-light)] px-2 py-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={selectAllVisibleWorkflows}
+                                        className="text-xs text-[#00d9ff] hover:text-[#6deaff]"
+                                    >
+                                        Select visible
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={clearWorkflowSelection}
+                                        className="text-xs text-rose-300 hover:text-rose-200"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+
+                                <div className="max-h-64 overflow-auto p-2 space-y-1">
+                                    {workflowsPayload.isLoading ? (
+                                        <p className="px-1 py-2 text-xs text-gray-500">Loading workflows...</p>
+                                    ) : filteredWorkflows.length === 0 ? (
+                                        <p className="px-1 py-2 text-xs text-gray-500">No workflows found.</p>
+                                    ) : (
+                                        filteredWorkflows.map((workflow) => {
+                                            const workflowId = String(workflow.id);
+                                            const checked = selectedWorkflowSet.has(workflowId);
+                                            return (
+                                                <label key={workflowId} className="flex items-center gap-2 rounded px-1 py-1 text-sm text-[var(--c-text-dim)] hover:bg-white/5">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleWorkflowSelection(workflowId)}
+                                                    />
+                                                    <span className="truncate">{workflow.name || workflowId}</span>
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+
                     <label className="flex flex-col gap-1">
                         <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">From</span>
                         <input
@@ -271,7 +448,7 @@ export default function Dashboard() {
                             value={executionRange.from}
                             max={executionRange.to}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, from: event.target.value }))}
-                            className="rounded-md border border-white/10 bg-[#0f1419] px-3 py-2 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                         />
                     </label>
 
@@ -282,7 +459,7 @@ export default function Dashboard() {
                             value={executionRange.to}
                             min={executionRange.from}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, to: event.target.value }))}
-                            className="rounded-md border border-white/10 bg-[#0f1419] px-3 py-2 text-sm text-white outline-none focus:border-[#00d9ff]/80"
+                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
                         />
                     </label>
 
@@ -297,7 +474,7 @@ export default function Dashboard() {
                     </button>
 
                     <p className={`text-sm ${rangeError ? "text-rose-400" : "text-gray-400"}`}>
-                        {rangeSummary}
+                        {rangeSummary} {selectedWorkflowIds.length > 0 ? `| Filtered to ${selectedWorkflowIds.length} workflow(s)` : "| Using all workflows"}
                     </p>
                 </div>
             </div>
@@ -344,7 +521,7 @@ export default function Dashboard() {
 
             {/* Bottom Table Section */}
             <div data-gsap="reveal">
-                <RecentActivityTable />
+                <RecentActivityTable selectedWorkflowIds={selectedWorkflowIds} refreshNonce={refreshNonce} />
             </div>
         </div>
     );

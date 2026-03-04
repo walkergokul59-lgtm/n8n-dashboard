@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 const SettingsContext = createContext();
 const DATASOURCE_KEY = 'n8nDataSource';
 const PROFILE_KEY = 'n8nClientProfile';
+const THEME_KEY = 'n8nTheme';
 const LIVE_DATASOURCE = 'n8n-server';
 
 const EMPTY_PROFILE = {
@@ -41,6 +42,19 @@ export const SettingsProvider = ({ children }) => {
     // Live n8n is now enforced as the default/active source.
     const [dataSource, setDataSourceState] = useState(LIVE_DATASOURCE);
     const [clientProfile, setClientProfileState] = useState(readProfileFromStorage);
+    const [theme, setThemeState] = useState(() => localStorage.getItem(THEME_KEY) || 'dark');
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
+
+    const toggleTheme = useCallback(() => {
+        setThemeState((prev) => {
+            const next = prev === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, next);
+            return next;
+        });
+    }, []);
 
     useEffect(() => {
         localStorage.setItem(DATASOURCE_KEY, LIVE_DATASOURCE);
@@ -66,7 +80,9 @@ export const SettingsProvider = ({ children }) => {
         setDataSource,
         clientProfile,
         setClientProfile,
-    }), [dataSource, setDataSource, clientProfile, setClientProfile]);
+        theme,
+        toggleTheme,
+    }), [dataSource, setDataSource, clientProfile, setClientProfile, theme, toggleTheme]);
 
     return (
         <SettingsContext.Provider value={contextValue}>

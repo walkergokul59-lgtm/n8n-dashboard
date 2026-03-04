@@ -1,4 +1,4 @@
-import { authenticateUser, findUserById, getAllowedWorkflowIds } from './accessControl.js';
+import { applyWorkflowSelection, authenticateUser, findUserById, getAllowedWorkflowIds } from './accessControl.js';
 import { buildOverview, checkHealth, countExecutionsInRange, listRecentExecutions, listWorkflows } from './dashboardCore.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from './rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from './tokenAuth.js';
@@ -107,7 +107,11 @@ export function createApiRouter(n8n) {
       if (pathname.startsWith('/api/dashboard/')) {
         const auth = await requireUser(req, res);
         if (!auth) return true;
-        const access = { allowedWorkflowIds: getAllowedWorkflowIds(auth.config, auth.user) };
+        const baseAllowedWorkflowIds = getAllowedWorkflowIds(auth.config, auth.user);
+        const selectedWorkflowIds = getQueryParam(req.url, 'workflowIds');
+        const access = {
+          allowedWorkflowIds: applyWorkflowSelection(baseAllowedWorkflowIds, selectedWorkflowIds),
+        };
 
         if (pathname === '/api/dashboard/overview' && method === 'GET') {
           sendJson(res, 200, await buildOverview(n8n, access));

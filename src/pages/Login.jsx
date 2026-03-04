@@ -31,9 +31,9 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#111a23] to-[#0f1419] flex items-center justify-center p-6">
-            <div className="w-full max-w-md bg-[#1a1f2e] border border-white/10 rounded-2xl shadow-2xl p-8">
-                <h1 className="text-2xl font-bold text-white mb-2">Dashboard Login</h1>
+        <div className="min-h-screen bg-gradient-to-br from-[var(--c-bg)] via-[#111a23] to-[var(--c-bg)] flex items-center justify-center p-6">
+            <div className="w-full max-w-md bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-2xl shadow-2xl p-8">
+                <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">Dashboard Login</h1>
                 <p className="text-sm text-gray-400 mb-6">Use admin or client credentials to continue.</p>
 
                 <form onSubmit={onSubmit} className="space-y-4">
@@ -43,7 +43,7 @@ export default function Login() {
                             type="email"
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
-                            className="w-full bg-[#0f1419] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#00d9ff]"
+                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[#00d9ff]"
                             required
                         />
                     </div>
@@ -53,7 +53,7 @@ export default function Login() {
                             type="password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
-                            className="w-full bg-[#0f1419] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#00d9ff]"
+                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[#00d9ff]"
                             required
                         />
                     </div>
@@ -63,7 +63,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-2.5 rounded-lg bg-[#00d9ff] text-[#0f1419] font-semibold disabled:opacity-70"
+                        className="w-full py-2.5 rounded-lg bg-[#00d9ff] text-[var(--c-bg)] font-semibold disabled:opacity-70"
                     >
                         {isSubmitting ? 'Signing in...' : 'Sign In'}
                     </button>

@@ -5,10 +5,12 @@ import { Header } from "./Header";
 import LightPillar from "./LightPillar";
 import { ScrollTrigger } from "../lib/gsap.js";
 import { useSmoothScroll } from "../hooks/useSmoothScroll";
+import { useSettings } from "../context/SettingsContext";
 
 export function Layout() {
     const location = useLocation();
     const scrollerRef = useRef(null);
+    const { theme } = useSettings();
 
     useSmoothScroll(scrollerRef, { duration: 0.8 });
 
@@ -20,21 +22,23 @@ export function Layout() {
 
     return (
         <div className="relative flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
-            <div className="pointer-events-none absolute inset-0 z-0">
-                <LightPillar
-                    topColor="#9DFFFF"
-                    bottomColor="#00D6E6"
-                    intensity={1.05}
-                    rotationSpeed={0.28}
-                    glowAmount={0.0055}
-                    pillarWidth={2.9}
-                    pillarHeight={0.45}
-                    noiseIntensity={0.28}
-                    mixBlendMode="screen"
-                    pillarRotation={-12}
-                    quality="high"
-                />
-            </div>
+            {theme === 'dark' && (
+                <div className="pointer-events-none absolute inset-0 z-0">
+                    <LightPillar
+                        topColor="#9DFFFF"
+                        bottomColor="#00D6E6"
+                        intensity={1.05}
+                        rotationSpeed={0.28}
+                        glowAmount={0.0055}
+                        pillarWidth={2.9}
+                        pillarHeight={0.45}
+                        noiseIntensity={0.28}
+                        mixBlendMode="screen"
+                        pillarRotation={-12}
+                        quality="high"
+                    />
+                </div>
+            )}
             <Sidebar />
             <div className="relative z-10 flex min-w-0 flex-1 flex-col">
                 <Header />

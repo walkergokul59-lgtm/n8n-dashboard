@@ -34,24 +34,24 @@ function WorkflowMultiSelectDropdown({
             <button
                 type="button"
                 onClick={onToggleOpen}
-                className="w-full text-left bg-[#0f1419] border border-white/10 rounded px-3 py-2 text-sm text-white hover:border-[#00d9ff]/60 transition-colors"
+                className="w-full text-left bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-3 py-2 text-sm text-[var(--c-text)] hover:border-[#00d9ff]/60 transition-colors"
             >
                 {selectedSet.size > 0 ? `${selectedSet.size} workflow(s) selected` : 'Select workflows'}
             </button>
 
             {isOpen ? (
-                <div className="absolute z-30 mt-2 w-full bg-[#0f1419] border border-white/10 rounded-lg shadow-xl">
-                    <div className="p-2 border-b border-white/10">
+                <div className="absolute z-30 mt-2 w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg shadow-xl">
+                    <div className="p-2 border-b border-[var(--c-border-light)]">
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(event) => onSearchChange(event.target.value)}
                             placeholder="Search workflows"
-                            className="w-full bg-[#141a21] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                            className="w-full bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                         />
                     </div>
 
-                    <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/10">
+                    <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--c-border-light)]">
                         <button
                             type="button"
                             onClick={onSelectAllVisible}
@@ -76,7 +76,7 @@ function WorkflowMultiSelectDropdown({
                                 const workflowId = String(workflow.id);
                                 const selected = selectedSet.has(workflowId);
                                 return (
-                                    <label key={workflowId} className="flex items-center gap-2 text-sm text-gray-200 px-1 py-1 rounded hover:bg-white/5">
+                                    <label key={workflowId} className="flex items-center gap-2 text-sm text-[var(--c-text-dim)] px-1 py-1 rounded hover:bg-white/5">
                                         <input
                                             type="checkbox"
                                             checked={selected}
@@ -212,14 +212,14 @@ export default function AdminPanel() {
         <div className="space-y-6 pb-10">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-white">Admin Panel</h2>
+                    <h2 className="text-xl font-bold text-[var(--c-text)]">Admin Panel</h2>
                     <p className="text-sm text-gray-400">Manage users, roles, clients, and workflow access.</p>
                 </div>
                 <button
                     type="button"
                     onClick={saveAll}
                     disabled={isSaving}
-                    className="px-4 py-2 rounded-lg bg-[#00d9ff] text-[#0f1419] font-semibold disabled:opacity-70"
+                    className="px-4 py-2 rounded-lg bg-[#00d9ff] text-[var(--c-bg)] font-semibold disabled:opacity-70"
                 >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -234,15 +234,15 @@ export default function AdminPanel() {
                 </p>
             ) : null}
 
-            <section className="bg-[#1a1f2e] border border-white/10 rounded-xl p-5 space-y-4">
+            <section className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-white font-semibold">Users</h3>
-                    <button type="button" onClick={addUser} className="text-xs px-3 py-1 rounded bg-white/10 text-gray-200">
+                    <h3 className="text-[var(--c-text)] font-semibold">Users</h3>
+                    <button type="button" onClick={addUser} className="text-xs px-3 py-1 rounded bg-white/10 text-[var(--c-text-dim)]">
                         Add User
                     </button>
                 </div>
                 {users.map((user, index) => (
-                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-[#141a21] border border-white/10 rounded-lg p-3">
+                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-3">
                         <input
                             type="email"
                             value={user.email || ''}
@@ -252,7 +252,7 @@ export default function AdminPanel() {
                                 setUsers(next);
                             }}
                             placeholder="email"
-                            className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                         />
                         <input
                             type="text"
@@ -263,7 +263,7 @@ export default function AdminPanel() {
                                 setUsers(next);
                             }}
                             placeholder="password"
-                            className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                         />
                         <select
                             value={user.role || 'client'}
@@ -272,7 +272,7 @@ export default function AdminPanel() {
                                 next[index] = { ...next[index], role: event.target.value };
                                 setUsers(next);
                             }}
-                            className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                         >
                             {roleOptions().map((role) => (
                                 <option key={role} value={role}>{role}</option>
@@ -285,7 +285,7 @@ export default function AdminPanel() {
                                 next[index] = { ...next[index], clientId: event.target.value };
                                 setUsers(next);
                             }}
-                            className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                             disabled={user.role === 'admin'}
                         >
                             <option value="">No client</option>
@@ -304,16 +304,16 @@ export default function AdminPanel() {
                 ))}
             </section>
 
-            <section className="bg-[#1a1f2e] border border-white/10 rounded-xl p-5 space-y-4">
+            <section className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-white font-semibold">Clients</h3>
-                    <button type="button" onClick={addClient} className="text-xs px-3 py-1 rounded bg-white/10 text-gray-200">
+                    <h3 className="text-[var(--c-text)] font-semibold">Clients</h3>
+                    <button type="button" onClick={addClient} className="text-xs px-3 py-1 rounded bg-white/10 text-[var(--c-text-dim)]">
                         Add Client
                     </button>
                 </div>
 
                 {clients.map((client, clientIndex) => (
-                    <div key={client.id} className="bg-[#141a21] border border-white/10 rounded-lg p-4 space-y-3">
+                    <div key={client.id} className="bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-4 space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <input
                                 type="text"
@@ -324,7 +324,7 @@ export default function AdminPanel() {
                                     setClients(next);
                                 }}
                                 placeholder="client id"
-                                className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                                className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                             />
                             <input
                                 type="text"
@@ -335,7 +335,7 @@ export default function AdminPanel() {
                                     setClients(next);
                                 }}
                                 placeholder="client name"
-                                className="bg-[#0f1419] border border-white/10 rounded px-2 py-1.5 text-sm text-white"
+                                className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
                             />
                             <button
                                 type="button"

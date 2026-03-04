@@ -45,7 +45,7 @@ export class N8nClient {
     this.env = env;
     this.baseApiUrl = joinUrl(env.n8nBaseUrl, env.n8nApiBasePath);
     this.authHeaders = buildAuthHeaders(env);
-    this._workingExecutionQuery = null; // Cache the working query variant
+    this._workingExecutionKeys = null; // Cache the supported param keys (NOT values, so workflowId/cursor can vary)
   }
 
   async requestJson(path, { method = 'GET', query, headers, body, signal } = {}) {
@@ -98,13 +98,15 @@ export class N8nClient {
       { limit },
     ];
 
-    // If we've found a working variant, try it first
+    // If we've found a working param shape, rebuild it with current call's values
     let tryQueries;
-    if (this._workingExecutionQuery) {
-      tryQueries = [
-        this._workingExecutionQuery,
-        ...fullQueryList.filter(q => JSON.stringify(q) !== JSON.stringify(this._workingExecutionQuery))
-      ];
+    if (this._workingExecutionKeys) {
+      const currentParams = { limit, status, includeData, cursor, workflowId };
+      const cachedQuery = {};
+      for (const key of this._workingExecutionKeys) {
+        if (currentParams[key] !== undefined) cachedQuery[key] = currentParams[key];
+      }
+      tryQueries = [cachedQuery, ...fullQueryList.filter(q => JSON.stringify(q) !== JSON.stringify(cachedQuery))];
     } else {
       tryQueries = fullQueryList;
     }
@@ -113,9 +115,13 @@ export class N8nClient {
     for (const query of tryQueries) {
       try {
         const payload = await this.requestJson('executions', { query });
-        // Cache this working variant for future calls
-        if (!this._workingExecutionQuery) {
-          this._workingExecutionQuery = query;
+        // Cache the supported param keys (strip dynamic per-call values so they can vary next call)
+        if (!this._workingExecutionKeys) {
+          const { workflowId: _wf, cursor: _c, ...baseShape } = query;
+          this._workingExecutionKeys = Object.keys(baseShape);
+          // Also include workflowId/cursor if they were in the working query
+          if ('workflowId' in query) this._workingExecutionKeys.push('workflowId');
+          if ('cursor' in query) this._workingExecutionKeys.push('cursor');
         }
         return {
           items: normalizeListPayload(payload),
