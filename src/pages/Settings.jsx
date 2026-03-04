@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, ImagePlus, Save } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 import { useSettings } from "../context/SettingsContext";
 
 const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
@@ -48,9 +50,18 @@ const isQuotaExceededError = (error) => {
 };
 
 export default function Settings() {
+    const location = useLocation();
+    const { apiFetch, refreshUser, user } = useAuth();
     const { dataSource, setDataSource, clientProfile, setClientProfile } = useSettings();
     const [formData, setFormData] = useState(clientProfile);
     const [statusMessage, setStatusMessage] = useState("");
+    const [approvalStatus, setApprovalStatus] = useState(user?.approvalStatus || "approved");
+    const [isProfileLoading, setIsProfileLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const showOnboardingIntro = Boolean(location.state?.fromSignup || location.state?.approvalRequired);
+    const userId = String(user?.id || "");
+    const userRole = String(user?.role || "");
+    const userApprovalStatus = String(user?.approvalStatus || "");
 
     useEffect(() => {
         setDataSource("n8n-server");
@@ -60,14 +71,66 @@ export default function Settings() {
         setFormData(clientProfile);
     }, [clientProfile]);
 
+    useEffect(() => {
+        setApprovalStatus(userApprovalStatus || "approved");
+    }, [userApprovalStatus]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadProfile = async () => {
+            if (!userId || userRole === "admin") {
+                if (mounted) setIsProfileLoading(false);
+                return;
+            }
+
+            setIsProfileLoading(true);
+            try {
+                const response = await apiFetch("/api/client/settings", {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => ({}));
+                    throw new Error(payload?.error || "Failed to load onboarding profile");
+                }
+
+                const payload = await response.json();
+                const profile = payload?.profile || {};
+                if (!mounted) return;
+                setFormData(profile);
+                setClientProfile(profile);
+                setApprovalStatus(payload?.approvalStatus || userApprovalStatus || "pending");
+            } catch (error) {
+                if (!mounted) return;
+                setStatusMessage(error?.message || "Could not load onboarding details. Please try again.");
+            } finally {
+                if (mounted) setIsProfileLoading(false);
+            }
+        };
+
+        void loadProfile();
+        return () => {
+            mounted = false;
+        };
+    }, [apiFetch, setClientProfile, userId, userRole, userApprovalStatus]);
+
+    const normalizedFormData = useMemo(() => ({
+        clientName: String(formData?.clientName || ""),
+        contactNumber: String(formData?.contactNumber || ""),
+        businessName: String(formData?.businessName || ""),
+        primaryEmail: String(formData?.primaryEmail || ""),
+        secondaryEmail: String(formData?.secondaryEmail || ""),
+        profileImage: String(formData?.profileImage || ""),
+    }), [formData]);
+
     const isFormValid = useMemo(() => (
-        Boolean(formData.clientName.trim())
-        && Boolean(formData.contactNumber.trim())
-        && Boolean(formData.businessName.trim())
-        && Boolean(formData.primaryEmail.trim())
-        && Boolean(formData.secondaryEmail.trim())
-        && Boolean(formData.profileImage)
-    ), [formData]);
+        Boolean(normalizedFormData.clientName.trim())
+        && Boolean(normalizedFormData.contactNumber.trim())
+        && Boolean(normalizedFormData.businessName.trim())
+        && Boolean(normalizedFormData.primaryEmail.trim())
+        && Boolean(normalizedFormData.secondaryEmail.trim())
+        && Boolean(normalizedFormData.profileImage)
+    ), [normalizedFormData]);
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
@@ -101,7 +164,7 @@ export default function Settings() {
         }
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!isFormValid) {
@@ -110,28 +173,55 @@ export default function Settings() {
         }
 
         const sanitizedProfile = {
-            clientName: formData.clientName.trim(),
-            contactNumber: formData.contactNumber.trim(),
-            businessName: formData.businessName.trim(),
-            primaryEmail: formData.primaryEmail.trim(),
-            secondaryEmail: formData.secondaryEmail.trim(),
-            profileImage: formData.profileImage,
+            clientName: normalizedFormData.clientName.trim(),
+            contactNumber: normalizedFormData.contactNumber.trim(),
+            businessName: normalizedFormData.businessName.trim(),
+            primaryEmail: normalizedFormData.primaryEmail.trim(),
+            secondaryEmail: normalizedFormData.secondaryEmail.trim(),
+            profileImage: normalizedFormData.profileImage,
         };
 
+        setIsSaving(true);
         try {
-            setClientProfile(sanitizedProfile);
-            setStatusMessage("Profile details saved successfully.");
+            const response = await apiFetch("/api/client/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify(sanitizedProfile),
+            });
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                throw new Error(payload?.error || "Could not save onboarding profile.");
+            }
+
+            const payload = await response.json();
+            const savedProfile = payload?.profile || sanitizedProfile;
+            setClientProfile(savedProfile);
+            setFormData(savedProfile);
+            setApprovalStatus(payload?.approvalStatus || "pending");
+            await refreshUser().catch(() => null);
+            setStatusMessage("Onboarding details saved. Your account remains restricted until root admin approval.");
         } catch (error) {
             if (isQuotaExceededError(error)) {
                 setStatusMessage("Browser storage is full. Use a smaller image and try again.");
                 return;
             }
-            setStatusMessage("Could not save profile details. Please try again.");
+            setStatusMessage(error?.message || "Could not save profile details. Please try again.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+            {showOnboardingIntro ? (
+                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3">
+                    <h2 className="text-sm font-semibold text-cyan-200">Onboarding Required</h2>
+                    <p className="text-xs text-cyan-100/80">
+                        Complete and save your profile details. Root admin approval is required before dashboard access is enabled.
+                    </p>
+                </div>
+            ) : null}
+
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-center justify-between gap-4">
                 <div>
                     <h2 className="text-sm font-semibold text-emerald-300">Live n8n Mode</h2>
@@ -143,12 +233,28 @@ export default function Settings() {
                 </div>
             </div>
 
+            <div className={`rounded-xl border px-4 py-3 ${
+                approvalStatus === "approved"
+                    ? "border-emerald-500/20 bg-emerald-500/10"
+                    : "border-amber-500/20 bg-amber-500/10"
+            }`}>
+                <h2 className="text-sm font-semibold text-[var(--c-text)]">Approval Status: {approvalStatus}</h2>
+                <p className="text-xs text-gray-300">
+                    {approvalStatus === "approved"
+                        ? "Your account is approved. Dashboard access is enabled."
+                        : "Your account is restricted until root admin approves your signup."}
+                </p>
+            </div>
+
             <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/70 overflow-hidden">
                 <div className="border-b border-[var(--c-border-light)] px-6 py-5">
                     <h3 className="text-lg font-bold text-[var(--c-text)]">Client Profile Details</h3>
                     <p className="text-sm text-gray-400">All fields below are mandatory. Saved profile image appears in the top-right header.</p>
                 </div>
 
+                {isProfileLoading ? (
+                    <div className="p-6 text-sm text-gray-400">Loading onboarding profile...</div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <label className="space-y-2">
@@ -157,7 +263,7 @@ export default function Settings() {
                                 type="text"
                                 name="clientName"
                                 required
-                                value={formData.clientName}
+                                value={normalizedFormData.clientName}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="Enter client name"
@@ -170,7 +276,7 @@ export default function Settings() {
                                 type="tel"
                                 name="contactNumber"
                                 required
-                                value={formData.contactNumber}
+                                value={normalizedFormData.contactNumber}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="+1 000 000 0000"
@@ -183,7 +289,7 @@ export default function Settings() {
                                 type="text"
                                 name="businessName"
                                 required
-                                value={formData.businessName}
+                                value={normalizedFormData.businessName}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="Enter business name"
@@ -196,7 +302,7 @@ export default function Settings() {
                                 type="email"
                                 name="primaryEmail"
                                 required
-                                value={formData.primaryEmail}
+                                value={normalizedFormData.primaryEmail}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="primary@business.com"
@@ -209,7 +315,7 @@ export default function Settings() {
                                 type="email"
                                 name="secondaryEmail"
                                 required
-                                value={formData.secondaryEmail}
+                                value={normalizedFormData.secondaryEmail}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="support@business.com"
@@ -220,8 +326,8 @@ export default function Settings() {
                     <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] p-4">
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="w-16 h-16 rounded-full overflow-hidden border border-white/20 bg-[var(--c-hover)] flex items-center justify-center">
-                                {formData.profileImage ? (
-                                    <img src={formData.profileImage} alt="Client profile" className="h-full w-full object-cover" />
+                                {normalizedFormData.profileImage ? (
+                                    <img src={normalizedFormData.profileImage} alt="Client profile" className="h-full w-full object-cover" />
                                 ) : (
                                     <ImagePlus size={20} className="text-gray-400" />
                                 )}
@@ -233,7 +339,7 @@ export default function Settings() {
                                     type="file"
                                     accept="image/*"
                                     onChange={handleImageChange}
-                                    required={!formData.profileImage}
+                                    required={!normalizedFormData.profileImage}
                                     className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--c-accent)]"
                                 />
                             </label>
@@ -245,10 +351,10 @@ export default function Settings() {
                         <button
                             type="submit"
                             className="inline-flex items-center rounded-lg bg-[var(--c-accent)] px-4 py-2 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={!isFormValid}
+                            disabled={!isFormValid || isSaving || isProfileLoading}
                         >
                             <Save size={16} className="mr-2" />
-                            Save Profile
+                            {isSaving ? "Saving..." : "Save Profile"}
                         </button>
                     </div>
 
@@ -256,6 +362,7 @@ export default function Settings() {
                         <p className="text-sm text-[var(--c-accent)]">{statusMessage}</p>
                     )}
                 </form>
+                )}
             </div>
         </div>
     );

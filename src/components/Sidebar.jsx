@@ -9,9 +9,10 @@ function cn(...inputs) {
 }
 
 export function Sidebar() {
-    const { isAdmin, logout } = useAuth();
+    const { isAdmin, user, logout } = useAuth();
+    const isApproved = isAdmin || user?.approvalStatus === 'approved';
 
-    const navItems = [
+    const fullNavItems = [
         { name: "Dashboard", path: "/dashboard", icon: Grid },
         { name: "AI Agent Logs", path: "/agent-logs", icon: FileText },
         { name: "Invoice Runs", path: "/invoice-runs", icon: File },
@@ -19,6 +20,9 @@ export function Sidebar() {
         { name: "SMS Outreach", path: "/sms-outreach", icon: MessageSquare },
         { name: "Settings", path: "/settings", icon: Settings },
     ];
+    const navItems = isApproved
+        ? [...fullNavItems]
+        : [{ name: "Settings", path: "/settings", icon: Settings }];
     if (isAdmin) {
         navItems.push({ name: "Admin", path: "/admin", icon: Shield });
     }

@@ -19,6 +19,14 @@ export function AuthProvider({ children }) {
         setUser(null);
     }, []);
 
+    const saveSession = useCallback((payload) => {
+        const nextToken = String(payload?.token || '');
+        localStorage.setItem(TOKEN_KEY, nextToken);
+        setToken(nextToken);
+        setUser(payload?.user || null);
+        return payload?.user || null;
+    }, []);
+
     const login = useCallback(async (email, password) => {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
@@ -33,12 +41,40 @@ export function AuthProvider({ children }) {
         }
 
         const payload = await response.json();
-        const nextToken = String(payload?.token || '');
-        localStorage.setItem(TOKEN_KEY, nextToken);
-        setToken(nextToken);
+        return saveSession(payload);
+    }, [saveSession]);
+
+    const signup = useCallback(async ({ email, password, clientName }) => {
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ email, password, clientName }),
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload?.error || 'Signup failed');
+        }
+
+        const payload = await response.json();
+        return saveSession(payload);
+    }, [saveSession]);
+
+    const refreshUser = useCallback(async () => {
+        if (!token) {
+            setUser(null);
+            return null;
+        }
+        const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            cache: 'no-store',
+        });
+        if (!res.ok) throw new Error('Session expired');
+        const payload = await res.json();
         setUser(payload?.user || null);
         return payload?.user || null;
-    }, []);
+    }, [token]);
 
     useEffect(() => {
         let mounted = true;
@@ -83,10 +119,13 @@ export function AuthProvider({ children }) {
         isLoading,
         isAuthenticated: Boolean(user && token),
         isAdmin: user?.role === 'admin',
+        isApproved: user?.role === 'admin' || user?.approvalStatus === 'approved',
         login,
+        signup,
+        refreshUser,
         logout,
         apiFetch,
-    }), [token, user, isLoading, login, logout, apiFetch]);
+    }), [token, user, isLoading, login, signup, refreshUser, logout, apiFetch]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

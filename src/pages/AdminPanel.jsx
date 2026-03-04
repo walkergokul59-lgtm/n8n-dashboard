@@ -9,6 +9,10 @@ function roleOptions() {
     return ['client', 'admin'];
 }
 
+function approvalStatusOptions() {
+    return ['pending', 'approved', 'rejected'];
+}
+
 function WorkflowMultiSelectDropdown({
     workflows,
     selectedWorkflowIds,
@@ -144,6 +148,10 @@ export default function AdminPanel() {
     }, [apiFetch]);
 
     const clientOptions = useMemo(() => clients.map((client) => ({ id: client.id, name: client.name })), [clients]);
+    const pendingApprovalsCount = useMemo(
+        () => users.filter((user) => user.role !== 'admin' && user.approvalStatus === 'pending').length,
+        [users]
+    );
 
     const addClient = () => {
         const nextId = `client-${Date.now()}`;
@@ -159,6 +167,7 @@ export default function AdminPanel() {
                 password: 'changeme',
                 role: 'client',
                 clientId: clientOptions[0]?.id || '',
+                approvalStatus: 'approved',
             },
         ]);
     };
@@ -174,6 +183,7 @@ export default function AdminPanel() {
                     email: String(user.email || '').trim().toLowerCase(),
                     password: String(user.password || ''),
                     role: roleOptions().includes(user.role) ? user.role : 'client',
+                    approvalStatus: approvalStatusOptions().includes(user.approvalStatus) ? user.approvalStatus : 'approved',
                 })).filter((user) => user.email),
                 clients: clients.map((client) => ({
                     ...client,
@@ -227,6 +237,7 @@ export default function AdminPanel() {
 
             {error ? <p className="text-sm text-rose-400">{error}</p> : null}
             {saveMessage ? <p className="text-sm text-emerald-400">{saveMessage}</p> : null}
+            <p className="text-sm text-amber-300">Pending client approvals: {pendingApprovalsCount}</p>
             {persistenceMode ? (
                 <p className="text-xs text-gray-500">
                     RBAC persistence: <span className="text-gray-300">{persistenceMode}</span>
@@ -242,7 +253,7 @@ export default function AdminPanel() {
                     </button>
                 </div>
                 {users.map((user, index) => (
-                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-3">
+                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-3">
                         <input
                             type="email"
                             value={user.email || ''}
@@ -291,6 +302,20 @@ export default function AdminPanel() {
                             <option value="">No client</option>
                             {clientOptions.map((client) => (
                                 <option key={client.id} value={client.id}>{client.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={user.approvalStatus || 'approved'}
+                            onChange={(event) => {
+                                const next = [...users];
+                                next[index] = { ...next[index], approvalStatus: event.target.value };
+                                setUsers(next);
+                            }}
+                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            disabled={user.role === 'admin'}
+                        >
+                            {approvalStatusOptions().map((status) => (
+                                <option key={status} value={status}>{status}</option>
                             ))}
                         </select>
                         <button

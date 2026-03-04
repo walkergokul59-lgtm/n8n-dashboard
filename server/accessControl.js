@@ -3,6 +3,20 @@ function workflowIdFromExecution(execution) {
   return candidate === null || candidate === undefined ? null : String(candidate);
 }
 
+const APPROVAL_STATUSES = new Set(['pending', 'approved', 'rejected']);
+
+export function normalizeApprovalStatus(status, fallback = 'approved') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (APPROVAL_STATUSES.has(normalized)) return normalized;
+  return APPROVAL_STATUSES.has(fallback) ? fallback : 'approved';
+}
+
+export function isUserApproved(user) {
+  if (!user) return false;
+  if (String(user.role || '') === 'admin') return true;
+  return normalizeApprovalStatus(user.approvalStatus, 'approved') === 'approved';
+}
+
 function normalizeWorkflowIdsInput(input) {
   if (Array.isArray(input)) {
     return input

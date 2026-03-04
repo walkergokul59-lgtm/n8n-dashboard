@@ -1,6 +1,6 @@
 import { getN8nClient } from './_client.js';
 import { checkHealth } from '../../server/dashboardCore.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireApprovedUser, requireUser } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -13,6 +13,10 @@ export default async function handler(req, res) {
     const auth = await requireUser(req);
     if (!auth) {
       res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    if (!requireApprovedUser(auth)) {
+      res.status(403).json({ error: 'Account pending admin approval. Please complete onboarding in Settings and wait for approval.' });
       return;
     }
 

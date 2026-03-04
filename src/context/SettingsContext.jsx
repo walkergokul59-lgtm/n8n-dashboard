@@ -66,14 +66,15 @@ export const SettingsProvider = ({ children }) => {
     }, []);
 
     const setClientProfile = useCallback((nextProfile) => {
-        const resolvedProfile = typeof nextProfile === 'function'
-            ? nextProfile(clientProfile)
-            : nextProfile;
-        const normalizedProfile = { ...EMPTY_PROFILE, ...resolvedProfile };
-
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(normalizedProfile));
-        setClientProfileState(normalizedProfile);
-    }, [clientProfile]);
+        setClientProfileState((previous) => {
+            const resolvedProfile = typeof nextProfile === 'function'
+                ? nextProfile(previous)
+                : nextProfile;
+            const normalizedProfile = { ...EMPTY_PROFILE, ...resolvedProfile };
+            localStorage.setItem(PROFILE_KEY, JSON.stringify(normalizedProfile));
+            return normalizedProfile;
+        });
+    }, []);
 
     const contextValue = useMemo(() => ({
         dataSource,

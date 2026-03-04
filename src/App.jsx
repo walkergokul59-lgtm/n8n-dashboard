@@ -78,9 +78,34 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+function RequireApprovedClient({ children }) {
+  const { isAuthenticated, isLoading, isAdmin, isApproved } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking approval...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin && !isApproved) {
+    return <Navigate to="/settings" replace state={{ approvalRequired: true }} />;
+  }
+
+  return children;
+}
+
 function RoleBasedSettings() {
   const { isAdmin } = useAuth();
   return isAdmin ? <AdminSettings /> : <Settings />;
+}
+
+function HomeRedirect() {
+  const { isAdmin, isApproved } = useAuth();
+  if (isAdmin) return <Navigate to="/admin" replace />;
+  if (!isApproved) return <Navigate to="/settings" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 function App() {
@@ -127,12 +152,12 @@ function App() {
                   </RequireAuth>
                 )}
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="agent-logs" element={<AIAgentLogs />} />
-                <Route path="invoice-runs" element={<InvoiceRuns />} />
-                <Route path="order-sync" element={<OrderSync />} />
-                <Route path="sms-outreach" element={<SmsOutreach />} />
+                <Route index element={<HomeRedirect />} />
+                <Route path="dashboard" element={<RequireApprovedClient><Dashboard /></RequireApprovedClient>} />
+                <Route path="agent-logs" element={<RequireApprovedClient><AIAgentLogs /></RequireApprovedClient>} />
+                <Route path="invoice-runs" element={<RequireApprovedClient><InvoiceRuns /></RequireApprovedClient>} />
+                <Route path="order-sync" element={<RequireApprovedClient><OrderSync /></RequireApprovedClient>} />
+                <Route path="sms-outreach" element={<RequireApprovedClient><SmsOutreach /></RequireApprovedClient>} />
                 <Route path="settings" element={<RoleBasedSettings />} />
                 <Route
                   path="admin"
