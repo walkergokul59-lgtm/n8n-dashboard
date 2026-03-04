@@ -325,8 +325,8 @@ export default function Dashboard() {
             title: "TOTAL EXECUTIONS",
             value: isLoading ? "-" : data?.totalExecutions || 0,
             icon: Zap,
-            iconColor: "text-[#00d9ff]",
-            borderColor: "border-l-[#00d9ff]",
+            iconColor: "text-[var(--c-accent)]",
+            borderColor: "border-l-[var(--c-accent)]",
         },
         {
             title: "MONTHLY EXECUTIONS",
@@ -371,7 +371,7 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 onClick={() => setIsWorkflowPickerOpen((current) => !current)}
-                                className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[#00d9ff]/80"
+                                className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[var(--c-accent)]/80"
                             >
                                 <span className="truncate">
                                     {selectedWorkflowIds.length > 0
@@ -394,7 +394,7 @@ export default function Dashboard() {
                                         value={workflowSearch}
                                         onChange={(event) => setWorkflowSearch(event.target.value)}
                                         placeholder="Search by workflow name or id"
-                                        className="w-full rounded-md border border-[var(--c-border-light)] bg-[var(--c-surface)] px-2 py-1.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                        className="w-full rounded-md border border-[var(--c-border-light)] bg-[var(--c-surface)] px-2 py-1.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                     />
                                 </div>
 
@@ -402,7 +402,7 @@ export default function Dashboard() {
                                     <button
                                         type="button"
                                         onClick={selectAllVisibleWorkflows}
-                                        className="text-xs text-[#00d9ff] hover:text-[#6deaff]"
+                                        className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-hover)]"
                                     >
                                         Select visible
                                     </button>
@@ -448,7 +448,7 @@ export default function Dashboard() {
                             value={executionRange.from}
                             max={executionRange.to}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, from: event.target.value }))}
-                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                         />
                     </label>
 
@@ -459,7 +459,7 @@ export default function Dashboard() {
                             value={executionRange.to}
                             min={executionRange.from}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, to: event.target.value }))}
-                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                         />
                     </label>
 
@@ -467,7 +467,7 @@ export default function Dashboard() {
                         type="button"
                         onClick={handleManualRefresh}
                         disabled={isRefetching || isRangeLoading}
-                        className="inline-flex items-center rounded-md border border-[#00d9ff]/30 bg-[#00d9ff]/10 px-4 py-2 text-sm font-semibold text-[#7cf3ff] transition hover:bg-[#00d9ff]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center rounded-md border border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10 px-4 py-2 text-sm font-semibold text-[var(--c-accent)] transition hover:bg-[var(--c-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <RefreshCw size={14} className={`mr-2 ${(isRefetching || isRangeLoading) ? "animate-spin" : ""}`} />
                         Refresh Data

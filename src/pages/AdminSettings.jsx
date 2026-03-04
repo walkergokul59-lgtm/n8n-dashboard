@@ -10,7 +10,7 @@ export default function AdminSettings() {
 
             <div className="rounded-xl border border-white/10 bg-[#141a21]/80 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                    <ShieldCheck className="text-[#00d9ff]" size={18} />
+                    <ShieldCheck className="text-[var(--c-accent)]" size={18} />
                     <h3 className="text-lg font-bold text-white">Admin Configuration Scope</h3>
                 </div>
 

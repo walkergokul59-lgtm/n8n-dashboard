@@ -159,7 +159,7 @@ export default function Settings() {
                                 required
                                 value={formData.clientName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="Enter client name"
                             />
                         </label>
@@ -172,7 +172,7 @@ export default function Settings() {
                                 required
                                 value={formData.contactNumber}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="+1 000 000 0000"
                             />
                         </label>
@@ -185,7 +185,7 @@ export default function Settings() {
                                 required
                                 value={formData.businessName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="Enter business name"
                             />
                         </label>
@@ -198,7 +198,7 @@ export default function Settings() {
                                 required
                                 value={formData.primaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="primary@business.com"
                             />
                         </label>
@@ -211,7 +211,7 @@ export default function Settings() {
                                 required
                                 value={formData.secondaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[#00d9ff]/80"
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
                                 placeholder="support@business.com"
                             />
                         </label>
@@ -234,7 +234,7 @@ export default function Settings() {
                                     accept="image/*"
                                     onChange={handleImageChange}
                                     required={!formData.profileImage}
-                                    className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[#00d9ff]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7cf3ff]"
+                                    className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--c-accent)]"
                                 />
                             </label>
                         </div>
@@ -244,7 +244,7 @@ export default function Settings() {
                         <p className="text-xs text-gray-500">Mandatory fields are marked with *</p>
                         <button
                             type="submit"
-                            className="inline-flex items-center rounded-lg bg-[#00d9ff] px-4 py-2 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[#28e0ff] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center rounded-lg bg-[var(--c-accent)] px-4 py-2 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={!isFormValid}
                         >
                             <Save size={16} className="mr-2" />
@@ -253,7 +253,7 @@ export default function Settings() {
                     </div>
 
                     {statusMessage && (
-                        <p className="text-sm text-[#7cf3ff]">{statusMessage}</p>
+                        <p className="text-sm text-[var(--c-accent)]">{statusMessage}</p>
                     )}
                 </form>
             </div>

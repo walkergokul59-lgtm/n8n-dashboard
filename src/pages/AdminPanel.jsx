@@ -34,7 +34,7 @@ function WorkflowMultiSelectDropdown({
             <button
                 type="button"
                 onClick={onToggleOpen}
-                className="w-full text-left bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-3 py-2 text-sm text-[var(--c-text)] hover:border-[#00d9ff]/60 transition-colors"
+                className="w-full text-left bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-3 py-2 text-sm text-[var(--c-text)] hover:border-[var(--c-accent)]/60 transition-colors"
             >
                 {selectedSet.size > 0 ? `${selectedSet.size} workflow(s) selected` : 'Select workflows'}
             </button>
@@ -55,7 +55,7 @@ function WorkflowMultiSelectDropdown({
                         <button
                             type="button"
                             onClick={onSelectAllVisible}
-                            className="text-xs text-[#00d9ff] hover:text-[#6deaff]"
+                            className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-hover)]"
                         >
                             Select visible
                         </button>
@@ -219,7 +219,7 @@ export default function AdminPanel() {
                     type="button"
                     onClick={saveAll}
                     disabled={isSaving}
-                    className="px-4 py-2 rounded-lg bg-[#00d9ff] text-[var(--c-bg)] font-semibold disabled:opacity-70"
+                    className="px-4 py-2 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70"
                 >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>

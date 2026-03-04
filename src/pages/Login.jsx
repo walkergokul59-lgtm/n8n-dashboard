@@ -43,7 +43,7 @@ export default function Login() {
                             type="email"
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
-                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[#00d9ff]"
+                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
                             required
                         />
                     </div>
@@ -53,7 +53,7 @@ export default function Login() {
                             type="password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
-                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[#00d9ff]"
+                            className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
                             required
                         />
                     </div>
@@ -63,7 +63,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full py-2.5 rounded-lg bg-[#00d9ff] text-[var(--c-bg)] font-semibold disabled:opacity-70"
+                        className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70"
                     >
                         {isSubmitting ? 'Signing in...' : 'Sign In'}
                     </button>

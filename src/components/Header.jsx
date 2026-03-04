@@ -68,7 +68,7 @@ export function Header() {
     return (
         <header ref={rootRef} className="h-20 bg-[var(--c-bg)] border-b border-[var(--c-border)] flex flex-col justify-center px-8 shrink-0 relative overflow-hidden">
             {/* Decorative gradient orb */}
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="dark-only absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             <div className="relative z-10 flex items-center justify-between">
                 <div>

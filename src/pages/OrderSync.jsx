@@ -22,9 +22,9 @@ export default function OrderSync() {
             title: 'ORDERS SYNCED',
             value: '20',
             icon: CheckCircle2,
-            iconColor: 'text-[#00d9ff]',
-            iconBg: 'bg-[#00d9ff]/10',
-            borderColor: 'border-l-[#00d9ff]',
+            iconColor: 'text-[var(--c-accent)]',
+            iconBg: 'bg-[var(--c-accent)/10]',
+            borderColor: 'border-l-[var(--c-accent)]',
         },
         {
             title: 'RETRY VOLUME',
@@ -84,9 +84,9 @@ export default function OrderSync() {
     const SortIcon = ({ columnKey }) => {
         if (sortConfig.key !== columnKey) return <ArrowUpDown size={14} className="ml-1 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />;
         return sortConfig.direction === 'asc' ? (
-            <ArrowUp size={14} className="ml-1 text-[#00d9ff]" />
+            <ArrowUp size={14} className="ml-1 text-[var(--c-accent)]" />
         ) : (
-            <ArrowDown size={14} className="ml-1 text-[#00d9ff]" />
+            <ArrowDown size={14} className="ml-1 text-[var(--c-accent)]" />
         );
     };
 
@@ -94,7 +94,7 @@ export default function OrderSync() {
         <div className="space-y-6 pb-10">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-[#00d9ff] tracking-tight">Order Sync</h1>
+                <h1 className="text-2xl font-bold text-[var(--c-accent)] tracking-tight">Order Sync</h1>
                 <p className="text-gray-400 text-sm mt-1">E-commerce to Warehouse sync logs.</p>
             </div>
 
@@ -187,7 +187,7 @@ export default function OrderSync() {
                                             className={cn(
                                                 'px-2.5 py-1 font-bold rounded-full border',
                                                 order.status === 'SUCCESS'
-                                                    ? 'bg-[#00d9ff]/10 text-[#00d9ff] border-[#00d9ff]/20'
+                                                    ? 'bg-[var(--c-accent)/10] text-[var(--c-accent)] border-[var(--c-accent)/20]'
                                                     : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                             )}
                                         >

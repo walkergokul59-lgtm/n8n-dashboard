@@ -51,12 +51,14 @@ html[data-theme="dark"] {
   --c-text-dim:     #e5e7eb;
   --c-text-muted:   #9ca3af;
   --c-text-subtle:  #6b7280;
+  --c-accent:       #00d9ff;
+  --c-accent-hover: #6deaff;
 }
 
 html[data-theme="light"] {
   --color-background: #f0f4f8;
   --color-foreground: #1e293b;
-  --color-primary:    #0891b2;
+  --color-primary:    #0369a1;
   --c-bg:           #f0f4f8;
   --c-surface:      #ffffff;
   --c-raised:       #f1f5fb;
@@ -69,4 +71,14 @@ html[data-theme="light"] {
   --c-text-dim:     #374151;
   --c-text-muted:   #64748b;
   --c-text-subtle:  #6b7280;
+  --c-accent:       #0369a1;
+  --c-accent-hover: #0284c7;
+}
+
+/* Light mode: hide neon decorative blur orbs */
+html[data-theme="light"] .dark-only { display: none !important; }
+
+/* Light mode: replace colored primary glows with neutral shadows */
+html[data-theme="light"] [class*="shadow-primary"] {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.10) !important;
 }

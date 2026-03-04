@@ -147,7 +147,7 @@ export default function InvoiceRuns() {
                                     )}
                                 >
                                     <td className="px-6 py-4 text-center text-gray-300 font-mono text-xs">{run.runId}</td>
-                                    <td className="px-6 py-4 text-[#00d9ff] font-bold font-mono text-xs">{run.invoiceId}</td>
+                                    <td className="px-6 py-4 text-[var(--c-accent)] font-bold font-mono text-xs">{run.invoiceId}</td>
                                     <td className="px-6 py-4">
                                         <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-[#2a3441] text-gray-300 border border-[var(--c-border-light)]">
                                             {run.source.replace('_', ' ')}

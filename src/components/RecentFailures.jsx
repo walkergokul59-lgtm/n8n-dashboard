@@ -4,7 +4,7 @@ export default function RecentFailures({ count = 0 }) {
     return (
         <div className="bg-[var(--c-raised)] rounded-xl p-6 shadow-lg border border-[var(--c-border-sub)] w-full flex flex-col relative overflow-hidden group">
             {/* Background Accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity duration-300 group-hover:bg-rose-500/10"></div>
+            <div className="dark-only absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity duration-300 group-hover:bg-rose-500/10"></div>
 
             <div className="flex items-center justify-between mb-6 relative z-10">
                 <h3 className="text-[var(--c-text)] font-semibold text-lg flex items-center">

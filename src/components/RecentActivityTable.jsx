@@ -108,11 +108,11 @@ export default function RecentActivityTable({ selectedWorkflowIds = [], refreshN
                                     className={`
                                         cursor-pointer transition-all duration-200 hover:bg-white/10 group
                                         ${index % 2 === 0 ? 'bg-transparent' : 'bg-[var(--c-surface)]/30'}
-                                        ${expandedRows.has(activity.id) ? 'bg-[#00d9ff]/5' : ''}
+                                        ${expandedRows.has(activity.id) ? 'bg-[var(--c-accent)]/5' : ''}
                                     `}
                                 >
-                                    <td className="px-6 py-4 text-center text-[#00d9ff] font-bold flex items-center justify-center">
-                                        <div className="mr-2 text-gray-500 transition-transform duration-200 group-hover:text-[#00d9ff]">
+                                    <td className="px-6 py-4 text-center text-[var(--c-accent)] font-bold flex items-center justify-center">
+                                        <div className="mr-2 text-gray-500 transition-transform duration-200 group-hover:text-[var(--c-accent)]">
                                             {expandedRows.has(activity.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                         </div>
                                         {activity.id}
@@ -136,7 +136,7 @@ export default function RecentActivityTable({ selectedWorkflowIds = [], refreshN
                                     <tr className="bg-[var(--c-bg)] border-b border-[var(--c-border-sub)] border-t border-t-[var(--c-border-sub)]">
                                         <td colSpan="5" className="p-0">
                                             <div className="px-12 py-6 animate-in slide-in-from-top-2 fade-in duration-200">
-                                                <div className="flex items-center mb-4 text-[#00d9ff] font-semibold text-xs tracking-wider uppercase">
+                                                <div className="flex items-center mb-4 text-[var(--c-accent)] font-semibold text-xs tracking-wider uppercase">
                                                     <Activity size={14} className="mr-2" />
                                                     Execution Details
                                                 </div>

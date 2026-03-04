@@ -15,7 +15,7 @@ function CustomTooltipContent({ active, payload, label }) {
         return (
             <div className="bg-[var(--c-hover)] border border-[var(--c-border-light)] p-3 rounded-lg shadow-xl">
                 <p className="text-gray-400 text-xs mb-1">{`Time: ${label}`}</p>
-                <p className="text-[#00d9ff] font-bold">
+                <p className="text-[var(--c-accent)] font-bold">
                     {`Requests: ${payload[0].value}`}
                 </p>
             </div>
@@ -56,7 +56,7 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
 
             {isLoading ? (
                 <div className="flex-1 w-full h-full flex flex-col items-center justify-center min-h-[250px] opacity-50">
-                    <Loader2 size={32} className="animate-spin text-[#00d9ff] mb-4" />
+                    <Loader2 size={32} className="animate-spin text-[var(--c-accent)] mb-4" />
                     <p className="text-gray-400 text-sm animate-pulse">Synchronizing cluster data...</p>
                 </div>
             ) : !hasData ? (
@@ -72,8 +72,8 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                         >
                             <defs>
                                 <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00d9ff" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#00d9ff" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--c-accent)" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="var(--c-accent)" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid
@@ -102,12 +102,12 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                             <Area
                                 type="monotone"
                                 dataKey="requests"
-                                stroke="#00d9ff"
+                                stroke="var(--c-accent)"
                                 strokeWidth={2}
                                 fillOpacity={1}
                                 fill="url(#colorRequests)"
                                 animationDuration={1000}
-                                activeDot={{ r: 6, fill: 'var(--c-raised)', stroke: '#00d9ff', strokeWidth: 2 }}
+                                activeDot={{ r: 6, fill: 'var(--c-raised)', stroke: 'var(--c-accent)', strokeWidth: 2 }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>
