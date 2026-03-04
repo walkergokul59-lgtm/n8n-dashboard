@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/useAuth';
 
+const REQUEST_TIMEOUT_MS = 12000;
+
 /**
  * Custom hook to simulate fetching data from an API with loading states,
  * refetching capabilities, and mock error handling.
@@ -29,9 +31,15 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
         setError(null);
         try {
             if (dataSource === 'n8n-server' && endpointPath) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
                 // LIVE (SERVER-SIDE) ROUTE - token stays on the server
                 const response = await apiFetch(`/api${endpointPath}`, {
-                    headers: { 'Accept': 'application/json' }
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal,
+                }).finally(() => {
+                    clearTimeout(timeoutId);
                 });
 
                 if (!response.ok) {
@@ -52,7 +60,12 @@ export const useDashboardData = (fetcherFn, endpointPath = '') => {
             setData(result);
             return result;
         } catch (err) {
-            setError(err);
+            if (err?.name === 'AbortError') {
+                setError(new Error('Dashboard request timed out. Please try refreshing data.'));
+                return null;
+            }
+
+            setError(err instanceof Error ? err : new Error(String(err)));
             return null;
         } finally {
             setIsLoading(false);

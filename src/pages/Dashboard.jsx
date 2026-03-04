@@ -35,6 +35,7 @@ const defaultRange = () => {
         to: formatDateInput(now),
     };
 };
+const RANGE_REQUEST_TIMEOUT_MS = 12000;
 
 const isAbortLikeError = (error) => {
     if (!error) return false;
@@ -97,6 +98,7 @@ export default function Dashboard() {
     const data = http.data;
     const isLoading = http.isLoading;
     const isRefetching = http.isRefetching;
+    const loadError = http.error;
     const refetch = http.refetch;
 
     const handleManualRefresh = async () => {
@@ -147,10 +149,13 @@ export default function Dashboard() {
             setIsRangeLoading(true);
             setRangeError("");
             try {
+                const timeoutId = setTimeout(() => controller.abort(), RANGE_REQUEST_TIMEOUT_MS);
                 const params = new URLSearchParams({ from, to });
                 const response = await apiFetch(`/api/dashboard/executions-count?${params.toString()}`, {
                     headers: { Accept: "application/json" },
                     signal: controller.signal,
+                }).finally(() => {
+                    clearTimeout(timeoutId);
                 });
 
                 if (!response.ok) {
@@ -163,7 +168,7 @@ export default function Dashboard() {
             } catch (error) {
                 if (cancelled || isAbortLikeError(error)) return;
                 if (!cancelled) {
-                    setRangeError("Could not fetch execution count. Please try again.");
+                    setRangeError("Could not fetch execution count. Please try refreshing.");
                 }
             } finally {
                 if (!cancelled) setIsRangeLoading(false);
@@ -296,6 +301,12 @@ export default function Dashboard() {
                     </p>
                 </div>
             </div>
+
+            {loadError ? (
+                <div className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                    {loadError.message || "Failed to load dashboard data. Click Refresh Data to retry."}
+                </div>
+            ) : null}
 
             <ChromaGrid
                 items={metrics}

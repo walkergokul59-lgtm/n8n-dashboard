@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Activity } from "lucide-react";
 import { getAIAgentLogs } from "../utils/mock-data";
 import { useDashboardData } from "../hooks/useDashboardData";
@@ -34,8 +34,11 @@ export default function RecentActivityTable() {
         data: [{ id: "1", name: "Mock Workflow", active: true }]
     }), []);
 
-    const { data, isLoading } = useDashboardData(() => mockExecutions, '/dashboard/recent-executions');
-    const { data: workflowsData } = useDashboardData(() => mockWorkflows, '/dashboard/workflows');
+    const fetchMockExecutions = useCallback(() => mockExecutions, [mockExecutions]);
+    const fetchMockWorkflows = useCallback(() => mockWorkflows, [mockWorkflows]);
+
+    const { data, isLoading } = useDashboardData(fetchMockExecutions, '/dashboard/recent-executions');
+    const { data: workflowsData } = useDashboardData(fetchMockWorkflows, '/dashboard/workflows');
 
     const activities = Array.isArray(data?.data) ? data.data : [];
     const workflowNameById = useMemo(() => {
