@@ -78,7 +78,8 @@ export function Sidebar() {
                 >
                     Logout
                 </button>
-                <div className="text-xs text-gray-500 text-center">v1.0.0</div>
+                <div className="text-xs text-gray-500 text-center">v2.0.0</div>
+                <div className="text-[10px] text-gray-500 text-center">A product of Mad Fusion</div>
             </div>
         </div>
     );

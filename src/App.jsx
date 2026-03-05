@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import AdminSettings from "./pages/AdminSettings";
 import Preloader from "./components/Preloader";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import AdminPanel from "./pages/AdminPanel";
 
 class ErrorBoundary extends Component {
@@ -144,6 +145,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/"
                 element={(

@@ -67,7 +67,7 @@ function uniqueStrings(values) {
   return [...new Set(ensureArray(values).map((v) => String(v).trim()).filter(Boolean))];
 }
 
-function getKvConfig() {
+export function getKvConfig() {
   const url = process.env.KV_REST_API_URL?.trim();
   const token = process.env.KV_REST_API_TOKEN?.trim();
   const key = process.env.RBAC_KV_KEY?.trim() || 'n8n:rbac';
@@ -75,7 +75,7 @@ function getKvConfig() {
   return { url, token, key };
 }
 
-async function runKvCommand(args) {
+export async function runKvCommand(args) {
   const kv = getKvConfig();
   if (!kv) return { ok: false, result: null };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 
 export default function Login() {
@@ -139,6 +139,11 @@ export default function Login() {
                         >
                             {isSubmitting ? 'Signing in...' : 'Sign In'}
                         </button>
+                        <div className="text-center mt-2">
+                            <Link to="/reset-password" className="text-sm text-[var(--c-accent)] hover:underline">
+                                Forgot Password?
+                            </Link>
+                        </div>
                     </form>
                 ) : (
                     <form onSubmit={onSignUpSubmit} className="space-y-4">

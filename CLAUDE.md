@@ -97,12 +97,12 @@ To add real data integration: Update mock data generators or replace with API ca
 
 ### Styling & Theme
 
-Dark theme (cyan accent). Tailwind v4 with CSS variables in `src/index.css`:
-- `--color-background: #0f1419`
-- `--color-foreground: #e0e0e0`
-- `--color-primary: #00d2d2`
+Tailwind v4 with CSS variables in `src/index.css`. Supports both **dark** and **light** themes (toggle via Settings):
+- **Dark**: `--color-background: #0f1419`, `--color-foreground: #e0e0e0`, `--color-primary: #00d2d2`
+- **Light**: CSS variable definitions updated dynamically based on `data-theme` attribute
+- Theme preference stored in `localStorage` (key: `n8n-theme`)
 
-No `tailwind.config.js` — uses `@tailwindcss/vite` plugin. Use `clsx` + `tailwind-merge` for conditional classes.
+No `tailwind.config.js` — uses `@tailwindcss/vite` plugin. Theme toggle managed by `SettingsContext` (`setTheme()` method). Use `clsx` + `tailwind-merge` for conditional classes.
 
 ### Visual Components & Effects
 
@@ -187,10 +187,13 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 Production deployment uses Vercel serverless functions instead of Node server:
 
 - **`api/auth/login.js`** — User authentication endpoint
+- **`api/auth/signup.js`** — Client user signup endpoint
 - **`api/auth/me.js`** — Current user info endpoint
+- **`api/client/settings.js`** — Client-specific settings (GET/PUT)
 - **`api/dashboard/workflows.js`** — Fetch workflows (respects RBAC)
 - **`api/dashboard/overview.js`** — Dashboard KPIs (respects RBAC)
 - **`api/dashboard/recent-executions.js`** — Execution history (respects RBAC)
+- **`api/dashboard/executions-count.js`** — Execution count metrics
 - **`api/dashboard/health.js`** — System health check
 - **`api/dashboard/stream.js`** — Real-time execution updates
 - **`api/admin/rbac.js`** — Admin panel: user/client/workflow management

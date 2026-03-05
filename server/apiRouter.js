@@ -7,6 +7,17 @@ import {
   isUserApproved,
   normalizeApprovalStatus,
 } from './accessControl.js';
+import {
+  findUserForReset,
+  generateResetCode,
+  getResetCode,
+  storeResetCode,
+  incrementAttempts,
+  deleteResetCode,
+  issueResetToken,
+  verifyResetToken,
+} from '../api/_lib/resetCodes.js';
+import { sendResetCodeEmail } from '../api/_lib/email.js';
 import { buildOverview, checkHealth, countExecutionsInRange, listRecentExecutions, listWorkflows } from './dashboardCore.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from './rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from './tokenAuth.js';
@@ -193,6 +204,109 @@ export function createApiRouter(n8n) {
         );
 
         sendJson(res, 201, { token, user: userView(createdUser) });
+        return true;
+      }
+
+      if (pathname === '/api/auth/reset-request' && method === 'POST') {
+        const body = await readJsonBody(req);
+        const email = String(body?.email || '').trim().toLowerCase();
+
+        if (!EMAIL_PATTERN.test(email)) {
+          sendJson(res, 400, { error: 'Enter a valid email address' });
+          return true;
+        }
+
+        const successResponse = { message: 'If an account with that email exists, a reset code has been sent.' };
+
+        const user = await findUserForReset(email);
+        if (!user) {
+          sendJson(res, 200, successResponse);
+          return true;
+        }
+
+        const existing = await getResetCode(email);
+        if (existing && Date.now() - existing.createdAt < 60_000) {
+          sendJson(res, 200, successResponse);
+          return true;
+        }
+
+        const code = generateResetCode();
+        await storeResetCode(email, code);
+        await sendResetCodeEmail(email, code);
+
+        sendJson(res, 200, successResponse);
+        return true;
+      }
+
+      if (pathname === '/api/auth/reset-verify' && method === 'POST') {
+        const body = await readJsonBody(req);
+        const email = String(body?.email || '').trim().toLowerCase();
+        const code = String(body?.code || '').trim();
+
+        if (!EMAIL_PATTERN.test(email) || !code) {
+          sendJson(res, 400, { error: 'Email and code are required' });
+          return true;
+        }
+
+        const stored = await getResetCode(email);
+        if (!stored) {
+          sendJson(res, 400, { error: 'No reset code found. It may have expired.' });
+          return true;
+        }
+
+        if (stored.attempts >= 5) {
+          await deleteResetCode(email);
+          sendJson(res, 400, { error: 'Too many failed attempts. Please request a new code.' });
+          return true;
+        }
+
+        if (stored.code !== code) {
+          await incrementAttempts(email, stored);
+          const remaining = 4 - stored.attempts;
+          sendJson(res, 400, { error: `Invalid code. ${remaining > 0 ? `${remaining} attempt(s) remaining.` : 'Please request a new code.'}` });
+          return true;
+        }
+
+        await deleteResetCode(email);
+        const resetToken = issueResetToken(email);
+        sendJson(res, 200, { resetToken });
+        return true;
+      }
+
+      if (pathname === '/api/auth/reset-password' && method === 'POST') {
+        const body = await readJsonBody(req);
+        const resetTokenValue = String(body?.resetToken || '').trim();
+        const newPassword = String(body?.newPassword || '');
+
+        if (!resetTokenValue) {
+          sendJson(res, 400, { error: 'Reset token is required' });
+          return true;
+        }
+
+        const tokenData = verifyResetToken(resetTokenValue);
+        if (!tokenData) {
+          sendJson(res, 400, { error: 'Invalid or expired reset token. Please start over.' });
+          return true;
+        }
+
+        if (newPassword.length < 4) {
+          sendJson(res, 400, { error: 'Password must be at least 4 characters long' });
+          return true;
+        }
+
+        const config = await readRbacConfig();
+        const user = findUserByEmail(config, tokenData.email);
+        if (!user) {
+          sendJson(res, 400, { error: 'User account not found' });
+          return true;
+        }
+
+        const users = (config.users || []).map((u) =>
+          String(u.id) === String(user.id) ? { ...u, password: newPassword } : u
+        );
+        await writeRbacConfig({ ...config, users });
+
+        sendJson(res, 200, { message: 'Password has been reset successfully.' });
         return true;
       }
 
