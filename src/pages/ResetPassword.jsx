@@ -119,20 +119,20 @@ export default function ResetPassword() {
     }
   };
 
-  const inputClass = 'w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]';
-  const buttonClass = 'w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70';
+  const inputClass = 'w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]';
+  const buttonClass = 'w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--c-bg)] via-[#111a23] to-[var(--c-bg)] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-2xl shadow-2xl p-8">
+    <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-lg p-8">
         <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">Reset Password</h1>
 
         {step === 'email' && (
           <>
-            <p className="text-sm text-gray-400 mb-6">Enter your email to receive a verification code.</p>
+            <p className="text-sm text-[var(--c-text-muted)] mb-6">Enter your email to receive a verification code.</p>
             <form onSubmit={onRequestCode} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Email</label>
+                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -141,8 +141,8 @@ export default function ResetPassword() {
                   required
                 />
               </div>
-              {error && <p className="text-sm text-rose-400">{error}</p>}
-              {info && <p className="text-sm text-emerald-400">{info}</p>}
+              {error && <p className="text-sm text-[var(--c-error)]">{error}</p>}
+              {info && <p className="text-sm text-[var(--c-success)]">{info}</p>}
               <button type="submit" disabled={isSubmitting} className={buttonClass}>
                 {isSubmitting ? 'Sending...' : 'Send Code'}
               </button>
@@ -157,10 +157,10 @@ export default function ResetPassword() {
 
         {step === 'code' && (
           <>
-            <p className="text-sm text-gray-400 mb-6">Enter the 6-digit code sent to <span className="text-[var(--c-text)]">{email}</span>.</p>
+            <p className="text-sm text-[var(--c-text-muted)] mb-6">Enter the 6-digit code sent to <span className="text-[var(--c-text)]">{email}</span>.</p>
             <form onSubmit={onVerifyCode} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Verification Code</label>
+                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Verification Code</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -172,8 +172,8 @@ export default function ResetPassword() {
                   required
                 />
               </div>
-              {error && <p className="text-sm text-rose-400">{error}</p>}
-              {info && <p className="text-sm text-emerald-400">{info}</p>}
+              {error && <p className="text-sm text-[var(--c-error)]">{error}</p>}
+              {info && <p className="text-sm text-[var(--c-success)]">{info}</p>}
               <button type="submit" disabled={isSubmitting || code.length < 6} className={buttonClass}>
                 {isSubmitting ? 'Verifying...' : 'Verify'}
               </button>
@@ -191,10 +191,10 @@ export default function ResetPassword() {
 
         {step === 'password' && (
           <>
-            <p className="text-sm text-gray-400 mb-6">Code verified. Set your new password.</p>
+            <p className="text-sm text-[var(--c-text-muted)] mb-6">Code verified. Set your new password.</p>
             <form onSubmit={onResetPassword} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">New Password</label>
+                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">New Password</label>
                 <input
                   type="password"
                   value={newPassword}
@@ -204,7 +204,7 @@ export default function ResetPassword() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Confirm Password</label>
+                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -223,7 +223,7 @@ export default function ResetPassword() {
 
         {step === 'success' && (
           <>
-            <p className="text-sm text-emerald-400 mb-6">Your password has been reset successfully.</p>
+            <p className="text-sm text-[var(--c-success)] mb-6">Your password has been reset successfully.</p>
             <Link
               to="/login"
               className={`${buttonClass} block text-center`}

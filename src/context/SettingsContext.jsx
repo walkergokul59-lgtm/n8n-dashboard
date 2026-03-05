@@ -42,7 +42,7 @@ export const SettingsProvider = ({ children }) => {
     // Live n8n is now enforced as the default/active source.
     const [dataSource, setDataSourceState] = useState(LIVE_DATASOURCE);
     const [clientProfile, setClientProfileState] = useState(readProfileFromStorage);
-    const [theme, setThemeState] = useState(() => localStorage.getItem(THEME_KEY) || 'dark');
+    const [theme, setThemeState] = useState(() => 'light');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);

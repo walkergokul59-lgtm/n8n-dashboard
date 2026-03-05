@@ -71,10 +71,10 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[var(--c-bg)] via-[#111a23] to-[var(--c-bg)] flex items-center justify-center p-6">
-            <div className="w-full max-w-md bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-2xl shadow-2xl p-8">
+        <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center p-6">
+            <div className="w-full max-w-md bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-lg p-8">
                 <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">Client Access</h1>
-                <p className="text-sm text-gray-400 mb-6">Sign in or create a new client account.</p>
+                <p className="text-sm text-[var(--c-text-muted)] mb-6">Sign in or create a new client account.</p>
 
                 <div className="grid grid-cols-2 gap-2 mb-6">
                     <button
@@ -84,9 +84,9 @@ export default function Login() {
                             setError('');
                             setInfo('');
                         }}
-                        className={`py-2 rounded-lg text-sm font-semibold ${mode === 'signin'
-                            ? 'bg-[var(--c-accent)] text-[var(--c-bg)]'
-                            : 'bg-[var(--c-bg)] border border-[var(--c-border-light)] text-[var(--c-text-dim)]'
+                        className={`py-2 rounded-lg text-sm font-bold transition-colors ${mode === 'signin'
+                            ? 'bg-[var(--c-accent)] text-white'
+                            : 'bg-white border border-[var(--c-border)] text-[var(--c-text-muted)] hover:border-[var(--c-accent)] hover:text-[var(--c-accent)]'
                             }`}
                     >
                         Sign In
@@ -98,9 +98,9 @@ export default function Login() {
                             setError('');
                             setInfo('');
                         }}
-                        className={`py-2 rounded-lg text-sm font-semibold ${mode === 'signup'
-                            ? 'bg-[var(--c-accent)] text-[var(--c-bg)]'
-                            : 'bg-[var(--c-bg)] border border-[var(--c-border-light)] text-[var(--c-text-dim)]'
+                        className={`py-2 rounded-lg text-sm font-bold transition-colors ${mode === 'signup'
+                            ? 'bg-[var(--c-accent)] text-white'
+                            : 'bg-white border border-[var(--c-border)] text-[var(--c-text-muted)] hover:border-[var(--c-accent)] hover:text-[var(--c-accent)]'
                             }`}
                     >
                         Sign Up
@@ -110,32 +110,32 @@ export default function Login() {
                 {mode === 'signin' ? (
                     <form onSubmit={onSignInSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Email</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
                             <input
                                 type="email"
                                 value={loginEmail}
                                 onChange={(event) => setLoginEmail(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Password</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
                             <input
                                 type="password"
                                 value={loginPassword}
                                 onChange={(event) => setLoginPassword(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 required
                             />
                         </div>
 
-                        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+                        {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
 
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70"
+                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
                         >
                             {isSubmitting ? 'Signing in...' : 'Sign In'}
                         </button>
@@ -148,61 +148,61 @@ export default function Login() {
                 ) : (
                     <form onSubmit={onSignUpSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Client Name</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Client Name</label>
                             <input
                                 type="text"
                                 value={signupClientName}
                                 onChange={(event) => setSignupClientName(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 placeholder="Acme Inc."
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Email</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
                             <input
                                 type="email"
                                 value={signupEmail}
                                 onChange={(event) => setSignupEmail(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Password</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
                             <input
                                 type="password"
                                 value={signupPassword}
                                 onChange={(event) => setSignupPassword(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">Confirm Password</label>
+                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Confirm Password</label>
                             <input
                                 type="password"
                                 value={signupConfirmPassword}
                                 onChange={(event) => setSignupConfirmPassword(event.target.value)}
-                                className="w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:border-[var(--c-accent)]"
+                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
                                 required
                             />
                         </div>
 
-                        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-                        {info ? <p className="text-sm text-emerald-400">{info}</p> : null}
+                        {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
+                        {info ? <p className="text-sm text-[var(--c-success)]">{info}</p> : null}
 
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70"
+                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
                         >
                             {isSubmitting ? 'Creating account...' : 'Sign Up'}
                         </button>
                     </form>
                 )}
 
-                <div className="mt-6 text-xs text-gray-500 space-y-1">
+                <div className="mt-6 text-xs text-[var(--c-text-subtle)] space-y-1">
                     <p>Admin: root@gmail.com / root</p>
                     <p>Existing Client: client1@gmail.com / client1</p>
                     <p>New signups require root admin approval before dashboard access.</p>
