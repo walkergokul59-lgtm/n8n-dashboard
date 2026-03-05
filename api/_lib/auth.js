@@ -231,6 +231,13 @@ export async function writeClientSettings(authUser, nextProfile) {
   const users = [...(config.users || [])];
   const clients = [...(config.clients || [])];
   const profile = normalizeOnboardingProfile(nextProfile || {});
+  const primaryEmail = String(profile.primaryEmail || '').trim().toLowerCase();
+  const secondaryEmail = String(profile.secondaryEmail || '').trim().toLowerCase();
+  if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
+    const error = new Error('Primary and secondary emails must be different.');
+    error.status = 400;
+    throw error;
+  }
 
   const userIndex = users.findIndex((user) => String(user.id) === String(authUser.id));
   if (userIndex < 0) return null;

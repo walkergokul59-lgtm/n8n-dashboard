@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Sun, Moon } from "lucide-react";
 import { gsap } from "../lib/gsap.js";
@@ -19,7 +19,8 @@ const ROUTE_LABELS = {
 
 export function Header() {
     const location = useLocation();
-    const { user } = useAuth();
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const { clientProfile, theme, toggleTheme } = useSettings();
     const rootRef = useRef(null);
     const titleRef = useRef(null);
@@ -27,9 +28,13 @@ export function Header() {
     const actionsRef = useRef(null);
     const helpButtonRef = useRef(null);
     const helpMenuRef = useRef(null);
+    const userButtonRef = useRef(null);
+    const userMenuRef = useRef(null);
     const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [ticketPlaceholderMessage, setTicketPlaceholderMessage] = useState("");
     const [helpMenuPosition, setHelpMenuPosition] = useState({ top: 0, left: 0 });
+    const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, left: 0 });
     const currentRouteInfo = ROUTE_LABELS[location.pathname] || {
         title: "Page Not Found",
         subtitle: "The requested page does not exist.",
@@ -41,6 +46,7 @@ export function Header() {
     const whatsappLink = "https://wa.me/919884209360";
     const supportEmailLink = "https://mail.google.com/mail/?view=cm&fs=1&to=neeranjanrit@gmail.com&su=Re%20support";
     const HELP_MENU_WIDTH = 256;
+    const USER_MENU_WIDTH = 200;
 
     const updateHelpMenuPosition = () => {
         if (!helpButtonRef.current) return;
@@ -49,6 +55,15 @@ export function Header() {
         const left = Math.min(Math.max(8, rect.right - HELP_MENU_WIDTH), maxLeft);
         const top = rect.bottom + 8;
         setHelpMenuPosition({ top, left });
+    };
+
+    const updateUserMenuPosition = () => {
+        if (!userButtonRef.current) return;
+        const rect = userButtonRef.current.getBoundingClientRect();
+        const maxLeft = Math.max(8, window.innerWidth - USER_MENU_WIDTH - 8);
+        const left = Math.min(Math.max(8, rect.right - USER_MENU_WIDTH), maxLeft);
+        const top = rect.bottom + 8;
+        setUserMenuPosition({ top, left });
     };
 
     useLayoutEffect(() => {
@@ -117,6 +132,39 @@ export function Header() {
     }, [isHelpMenuOpen]);
 
     useEffect(() => {
+        if (!isUserMenuOpen) return;
+        updateUserMenuPosition();
+
+        const handleOutsideClick = (event) => {
+            const target = event.target;
+            if (
+                userButtonRef.current?.contains(target) ||
+                userMenuRef.current?.contains(target)
+            ) {
+                return;
+            }
+            setIsUserMenuOpen(false);
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleOutsideClick);
+        document.addEventListener("keydown", handleEscape);
+        window.addEventListener("resize", updateUserMenuPosition);
+        window.addEventListener("scroll", updateUserMenuPosition, true);
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick);
+            document.removeEventListener("keydown", handleEscape);
+            window.removeEventListener("resize", updateUserMenuPosition);
+            window.removeEventListener("scroll", updateUserMenuPosition, true);
+        };
+    }, [isUserMenuOpen]);
+
+    useEffect(() => {
         if (!ticketPlaceholderMessage) return;
         const timer = setTimeout(() => setTicketPlaceholderMessage(""), 2500);
         return () => clearTimeout(timer);
@@ -159,7 +207,17 @@ export function Header() {
                             Help
                         </button>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[var(--c-bg)] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform overflow-hidden">
+                    <button
+                        ref={userButtonRef}
+                        type="button"
+                        onClick={() => {
+                            setIsUserMenuOpen((current) => !current);
+                            setIsHelpMenuOpen(false);
+                        }}
+                        aria-haspopup="menu"
+                        aria-expanded={isUserMenuOpen}
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[var(--c-bg)] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--c-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--c-bg)]"
+                    >
                         {showClientProfileImage ? (
                             <img
                                 src={clientProfile.profileImage}
@@ -169,7 +227,7 @@ export function Header() {
                         ) : (
                             userInitial
                         )}
-                    </div>
+                    </button>
                 </div>
                 {ticketPlaceholderMessage ? (
                     <p className="absolute top-full right-8 mt-2 text-xs text-gray-400">
@@ -200,6 +258,8 @@ export function Header() {
                         </a>
                         <a
                             href={supportEmailLink}
+                            target="_blank"
+                            rel="noreferrer"
                             role="menuitem"
                             className="block px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
                             onClick={() => setIsHelpMenuOpen(false)}
@@ -216,6 +276,44 @@ export function Header() {
                             }}
                         >
                             Customer Ticket (Placeholder)
+                        </button>
+                    </div>,
+                    document.body
+                )
+                : null}
+            {isUserMenuOpen && typeof document !== "undefined"
+                ? createPortal(
+                    <div
+                        ref={userMenuRef}
+                        role="menu"
+                        className="fixed w-52 rounded-md border border-[var(--c-border)] bg-[var(--c-bg)] shadow-xl z-[9999] py-1"
+                        style={{
+                            top: `${userMenuPosition.top}px`,
+                            left: `${userMenuPosition.left}px`,
+                        }}
+                    >
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            onClick={() => {
+                                setIsUserMenuOpen(false);
+                                navigate("/settings");
+                            }}
+                        >
+                            Settings
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            onClick={() => {
+                                setIsUserMenuOpen(false);
+                                logout();
+                                navigate("/login", { replace: true });
+                            }}
+                        >
+                            Logout
                         </button>
                     </div>,
                     document.body

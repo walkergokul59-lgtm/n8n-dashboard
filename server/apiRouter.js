@@ -229,6 +229,12 @@ export function createApiRouter(n8n) {
 
         const body = await readJsonBody(req);
         const profile = normalizeOnboardingProfile(body || {});
+        const primaryEmail = String(profile.primaryEmail || '').trim().toLowerCase();
+        const secondaryEmail = String(profile.secondaryEmail || '').trim().toLowerCase();
+        if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
+          sendJson(res, 400, { error: 'Primary and secondary emails must be different.' });
+          return true;
+        }
         const users = [...(auth.config.users || [])];
         const clients = [...(auth.config.clients || [])];
         const clientIndex = clients.findIndex((client) => String(client.id) === String(auth.user.clientId || ''));

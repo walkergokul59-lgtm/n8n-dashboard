@@ -6,7 +6,8 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend
+    Legend,
+    ReferenceLine
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
 
@@ -43,6 +44,7 @@ function RenderLegendContent(props) {
 
 export default function ExecutionVolumeChart({ data, isLoading }) {
     const hasData = Array.isArray(data) && data.length > 0;
+    const allZero = hasData && data.every((d) => Number(d?.executions || 0) === 0);
     const chartData = hasData
         ? data.map((d) => ({
             time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -94,11 +96,14 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
-                                domain={[0, 'dataMax + 10']}
+                                domain={allZero ? [-1, 1] : [0, 'dataMax + 10']}
                                 tickCount={5}
                             />
                             <Tooltip content={<CustomTooltipContent />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Legend content={RenderLegendContent} verticalAlign="top" align="right" />
+                            {allZero ? (
+                                <ReferenceLine y={0} stroke="rgba(255,255,255,0.35)" strokeDasharray="4 4" />
+                            ) : null}
                             <Area
                                 type="monotone"
                                 dataKey="requests"

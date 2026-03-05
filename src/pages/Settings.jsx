@@ -4,9 +4,15 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useSettings } from "../context/SettingsContext";
 
-const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_PROFILE_IMAGE_DIMENSION = 384;
 const PROFILE_IMAGE_QUALITY = 0.82;
+const ALLOWED_IMAGE_TYPES = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+]);
 
 const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -123,14 +129,19 @@ export default function Settings() {
         profileImage: String(formData?.profileImage || ""),
     }), [formData]);
 
-    const isFormValid = useMemo(() => (
-        Boolean(normalizedFormData.clientName.trim())
-        && Boolean(normalizedFormData.contactNumber.trim())
-        && Boolean(normalizedFormData.businessName.trim())
-        && Boolean(normalizedFormData.primaryEmail.trim())
-        && Boolean(normalizedFormData.secondaryEmail.trim())
-        && Boolean(normalizedFormData.profileImage)
-    ), [normalizedFormData]);
+    const isFormValid = useMemo(() => {
+        const primary = normalizedFormData.primaryEmail.trim().toLowerCase();
+        const secondary = normalizedFormData.secondaryEmail.trim().toLowerCase();
+        return (
+            Boolean(normalizedFormData.clientName.trim())
+            && Boolean(normalizedFormData.contactNumber.trim())
+            && Boolean(normalizedFormData.businessName.trim())
+            && Boolean(primary)
+            && Boolean(secondary)
+            && primary !== secondary
+            && Boolean(normalizedFormData.profileImage)
+        );
+    }, [normalizedFormData]);
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
@@ -144,13 +155,13 @@ export default function Settings() {
 
         setStatusMessage("");
 
-        if (!file.type.startsWith("image/")) {
-            setStatusMessage("Please upload a valid image file.");
+        if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+            setStatusMessage("Please upload a PNG, JPG, WebP, or GIF image.");
             return;
         }
 
         if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-            setStatusMessage("Image is too large. Please upload an image smaller than 8 MB.");
+            setStatusMessage("Image is too large. Please upload an image smaller than 2 MB.");
             return;
         }
 
@@ -168,7 +179,7 @@ export default function Settings() {
         event.preventDefault();
 
         if (!isFormValid) {
-            setStatusMessage("Please complete all mandatory profile fields before saving.");
+            setStatusMessage("Please complete all mandatory profile fields. Primary and secondary emails must be different.");
             return;
         }
 
@@ -180,6 +191,13 @@ export default function Settings() {
             secondaryEmail: normalizedFormData.secondaryEmail.trim(),
             profileImage: normalizedFormData.profileImage,
         };
+
+        const primaryEmail = sanitizedProfile.primaryEmail.toLowerCase();
+        const secondaryEmail = sanitizedProfile.secondaryEmail.toLowerCase();
+        if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
+            setStatusMessage("Primary and secondary emails must be different.");
+            return;
+        }
 
         setIsSaving(true);
         try {
@@ -199,7 +217,7 @@ export default function Settings() {
             setFormData(savedProfile);
             setApprovalStatus(payload?.approvalStatus || "pending");
             await refreshUser().catch(() => null);
-            setStatusMessage("Onboarding details saved. Your account remains restricted until root admin approval.");
+            setStatusMessage("");
         } catch (error) {
             if (isQuotaExceededError(error)) {
                 setStatusMessage("Browser storage is full. Use a smaller image and try again.");
@@ -337,7 +355,7 @@ export default function Settings() {
                                 <span className="text-sm font-medium text-[var(--c-text-dim)]">Profile Image *</span>
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/png,image/jpeg,image/webp,image/gif"
                                     onChange={handleImageChange}
                                     required={!normalizedFormData.profileImage}
                                     className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--c-accent)]"

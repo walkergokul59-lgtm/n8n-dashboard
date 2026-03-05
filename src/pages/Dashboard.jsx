@@ -1,4 +1,4 @@
-import { Zap, CalendarDays, CheckCircle2, Clock, RefreshCw, ChevronDown } from 'lucide-react';
+import { Zap, CalendarDays, CheckCircle2, Clock, RefreshCw, ChevronDown, Download } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CountUpModule from 'react-countup';
 import { clsx } from "clsx";
@@ -6,7 +6,6 @@ import { twMerge } from "tailwind-merge";
 import ExecutionVolumeChart from "../components/ExecutionVolumeChart";
 import RecentFailures from "../components/RecentFailures";
 import SystemHealth from "../components/SystemHealth";
-import RecentActivityTable from "../components/RecentActivityTable";
 import ChromaGrid from "../components/ChromaGrid";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { getWorkflowMetrics } from "../utils/mock-data";
@@ -38,9 +37,9 @@ const defaultRange = () => {
 const RANGE_REQUEST_TIMEOUT_MS = 30000;
 const WORKFLOWS_MOCK_FETCHER = () => ({ data: [] });
 
-const buildWorkflowParam = (selectedWorkflowIds) => {
-    const normalized = [...new Set((selectedWorkflowIds || []).map((id) => String(id).trim()).filter(Boolean))];
-    return normalized.join(",");
+const buildWorkflowParam = (selectedWorkflowId) => {
+    const normalized = String(selectedWorkflowId || "").trim();
+    return normalized;
 };
 
 const isAbortLikeError = (error) => {
@@ -92,20 +91,20 @@ export default function Dashboard() {
     const showSystemHealthCard = false;
     const { dataSource } = useSettings();
     const { apiFetch } = useAuth();
-    const [selectedWorkflowIds, setSelectedWorkflowIds] = useState([]);
+    const [selectedWorkflowId, setSelectedWorkflowId] = useState("");
     const [isWorkflowPickerOpen, setIsWorkflowPickerOpen] = useState(false);
     const [workflowSearch, setWorkflowSearch] = useState("");
-    const [workflowMenuStyle, setWorkflowMenuStyle] = useState({ top: 0, left: 0, width: 320 });
     const [executionRange, setExecutionRange] = useState(defaultRange);
     const [rangeCount, setRangeCount] = useState(0);
     const [isRangeLoading, setIsRangeLoading] = useState(false);
     const [rangeError, setRangeError] = useState("");
     const [refreshNonce, setRefreshNonce] = useState(0);
+    const [isExporting, setIsExporting] = useState(false);
     const rootRef = useRef(null);
     const workflowPickerRef = useRef(null);
     const workflowMenuRef = useRef(null);
 
-    const selectedWorkflowParam = useMemo(() => buildWorkflowParam(selectedWorkflowIds), [selectedWorkflowIds]);
+    const selectedWorkflowParam = useMemo(() => buildWorkflowParam(selectedWorkflowId), [selectedWorkflowId]);
     const workflowQuery = selectedWorkflowParam ? `workflowIds=${encodeURIComponent(selectedWorkflowParam)}` : "";
     const overviewEndpoint = workflowQuery ? `/dashboard/overview?${workflowQuery}` : '/dashboard/overview';
     const workflowsEndpoint = '/dashboard/workflows';
@@ -115,7 +114,6 @@ export default function Dashboard() {
     const workflows = useMemo(() => {
         return Array.isArray(workflowsPayload?.data?.data) ? workflowsPayload.data.data : [];
     }, [workflowsPayload?.data?.data]);
-    const selectedWorkflowSet = useMemo(() => new Set((selectedWorkflowIds || []).map((id) => String(id))), [selectedWorkflowIds]);
     const filteredWorkflows = useMemo(() => {
         const search = String(workflowSearch || "").trim().toLowerCase();
         if (!search) return workflows;
@@ -138,45 +136,87 @@ export default function Dashboard() {
         await Promise.all([refetch(), refetchWorkflows()]);
     };
 
-    const toggleWorkflowSelection = (workflowId) => {
-        const normalizedId = String(workflowId);
-        setSelectedWorkflowIds((previous) => {
-            const nextSet = new Set((previous || []).map((id) => String(id)));
-            if (nextSet.has(normalizedId)) nextSet.delete(normalizedId);
-            else nextSet.add(normalizedId);
-            return [...nextSet];
-        });
+    const handleExportExcel = async () => {
+        if (isExporting) return;
+        setIsExporting(true);
+        try {
+            const nowIso = new Date().toISOString();
+            const workflowFilter = selectedWorkflowId ? selectedWorkflowId : "All";
+
+            const summaryRows = [
+                ["Generated At", nowIso],
+                ["Data Source", dataSource || ""],
+                ["Workflow Filter", workflowFilter],
+                ["Date Range From", executionRange.from || ""],
+                ["Date Range To", executionRange.to || ""],
+                ["Executions in Range", Number.isFinite(rangeCount) ? rangeCount : ""],
+                ["Total Executions", data?.totalExecutions ?? ""],
+                ["Executions Change (%)", data?.executionsChange ?? ""],
+                ["Total Cost", data?.totalCost ?? ""],
+                ["Cost Change", data?.costChange ?? ""],
+                ["Failures (24h)", data?.failures24h ?? ""],
+                ["Error Rate (%)", data?.errorRate ?? ""],
+                ["Error Rate Change", data?.errorRateChange ?? ""],
+                ["Average Duration (ms)", data?.averageDuration ?? ""],
+                ["Duration Change (ms)", data?.durationChange ?? ""],
+            ];
+
+            const escapeCsv = (value) => {
+                const str = value == null ? "" : String(value);
+                if (/[",\n\r]/.test(str)) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+
+            const summaryCsv = [
+                ["Metric", "Value"],
+                ...summaryRows,
+                [],
+                ["Volume Data"],
+                ["timestamp", "executions"],
+                ...(Array.isArray(data?.volumeData)
+                    ? data.volumeData.map((point) => [
+                        point?.timestamp ?? "",
+                        Number.isFinite(point?.executions) ? point.executions : Number(point?.executions || 0),
+                    ])
+                    : []),
+            ]
+                .map((row) => row.map(escapeCsv).join(","))
+                .join("\r\n");
+
+            const blob = new Blob([summaryCsv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const safeFrom = executionRange.from || "range-start";
+            const safeTo = executionRange.to || "range-end";
+            const fileName = `dashboard-overview-${safeFrom}_to_${safeTo}.csv`;
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to export CSV", error);
+        } finally {
+            setIsExporting(false);
+        }
     };
 
-    const selectAllVisibleWorkflows = () => {
-        const visibleIds = filteredWorkflows.map((workflow) => String(workflow.id));
-        setSelectedWorkflowIds((previous) => {
-            const nextSet = new Set((previous || []).map((id) => String(id)));
-            for (const workflowId of visibleIds) nextSet.add(workflowId);
-            return [...nextSet];
-        });
+    const selectWorkflow = (workflowId) => {
+        const normalizedId = String(workflowId || "");
+        setSelectedWorkflowId(normalizedId);
+        setIsWorkflowPickerOpen(false);
     };
 
     const clearWorkflowSelection = () => {
-        setSelectedWorkflowIds([]);
+        setSelectedWorkflowId("");
     };
 
     useEffect(() => {
         if (!isWorkflowPickerOpen) return;
-
-        const updateMenuPosition = () => {
-            const pickerEl = workflowPickerRef.current;
-            if (!pickerEl) return;
-
-            const rect = pickerEl.getBoundingClientRect();
-            const viewportPadding = 8;
-            const width = Math.max(320, Math.round(rect.width));
-            const maxLeft = Math.max(viewportPadding, window.innerWidth - width - viewportPadding);
-            const left = Math.min(Math.max(viewportPadding, rect.left), maxLeft);
-            const top = Math.min(rect.bottom + 8, window.innerHeight - viewportPadding);
-
-            setWorkflowMenuStyle({ top, left, width });
-        };
 
         const onPointerDown = (event) => {
             const target = event.target;
@@ -190,15 +230,10 @@ export default function Dashboard() {
             if (event.key === "Escape") setIsWorkflowPickerOpen(false);
         };
 
-        updateMenuPosition();
-        window.addEventListener("resize", updateMenuPosition);
-        window.addEventListener("scroll", updateMenuPosition, true);
         document.addEventListener("pointerdown", onPointerDown);
         document.addEventListener("keydown", onKeyDown);
 
         return () => {
-            window.removeEventListener("resize", updateMenuPosition);
-            window.removeEventListener("scroll", updateMenuPosition, true);
             document.removeEventListener("pointerdown", onPointerDown);
             document.removeEventListener("keydown", onKeyDown);
         };
@@ -249,9 +284,9 @@ export default function Dashboard() {
             try {
                 const timeoutId = setTimeout(() => controller.abort(), RANGE_REQUEST_TIMEOUT_MS);
                 const params = new URLSearchParams({ from, to });
-                if (selectedWorkflowParam) {
-                    params.set("workflowIds", selectedWorkflowParam);
-                }
+        if (selectedWorkflowParam) {
+            params.set("workflowIds", selectedWorkflowParam);
+        }
                 const response = await apiFetch(`/api/dashboard/executions-count?${params.toString()}`, {
                     headers: { Accept: "application/json" },
                     signal: controller.signal,
@@ -289,6 +324,14 @@ export default function Dashboard() {
         if (rangeError) return rangeError;
         return `Showing executions from ${executionRange.from} to ${executionRange.to}.`;
     }, [executionRange.from, executionRange.to, isRangeLoading, rangeError]);
+    const canExport = !isLoading && !isRangeLoading && !loadError && !rangeError && !isExporting;
+    const exportDisabledReason = (() => {
+        if (isExporting) return "Export in progress";
+        if (isLoading || isRangeLoading) return "Dashboard data is still loading";
+        if (loadError) return "Dashboard data failed to load";
+        if (rangeError) return "Date range is invalid";
+        return "";
+    })();
 
     useLayoutEffect(() => {
         if (!rootRef.current) return;
@@ -365,28 +408,27 @@ export default function Dashboard() {
 
             <div data-gsap="reveal" className="relative z-[70] rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 p-4">
                 <div className="flex flex-wrap items-end gap-4">
-                    <div ref={workflowPickerRef} className="relative">
-                        <label className="flex flex-col gap-1">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Workflows</span>
-                            <button
-                                type="button"
-                                onClick={() => setIsWorkflowPickerOpen((current) => !current)}
-                                className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[var(--c-accent)]/80"
-                            >
-                                <span className="truncate">
-                                    {selectedWorkflowIds.length > 0
-                                        ? `${selectedWorkflowIds.length} selected`
-                                        : "All accessible workflows"}
-                                </span>
-                                <ChevronDown size={14} className={`ml-2 shrink-0 transition-transform ${isWorkflowPickerOpen ? "rotate-180" : ""}`} />
-                            </button>
-                        </label>
+                        <div ref={workflowPickerRef} className="relative z-[2000]">
+                            <label className="flex flex-col gap-1">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Workflows</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsWorkflowPickerOpen((current) => !current)}
+                                    className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[var(--c-accent)]/80"
+                                >
+                                    <span className="truncate">
+                                        {selectedWorkflowId
+                                            ? (workflows.find((wf) => String(wf.id) === String(selectedWorkflowId))?.name || selectedWorkflowId)
+                                            : "All accessible workflows"}
+                                    </span>
+                                    <ChevronDown size={14} className={`ml-2 shrink-0 transition-transform ${isWorkflowPickerOpen ? "rotate-180" : ""}`} />
+                                </button>
+                            </label>
 
                         {isWorkflowPickerOpen ? (
                             <div
                                 ref={workflowMenuRef}
-                                className="fixed z-[1000] rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] shadow-xl"
-                                style={{ top: `${workflowMenuStyle.top}px`, left: `${workflowMenuStyle.left}px`, width: `${workflowMenuStyle.width}px` }}
+                                className="absolute left-0 top-full mt-2 z-[3000] w-[min(420px,90vw)] rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] shadow-xl"
                             >
                                 <div className="border-b border-[var(--c-border-light)] p-2">
                                     <input
@@ -398,14 +440,7 @@ export default function Dashboard() {
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between border-b border-[var(--c-border-light)] px-2 py-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={selectAllVisibleWorkflows}
-                                        className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-hover)]"
-                                    >
-                                        Select visible
-                                    </button>
+                                <div className="flex items-center justify-end border-b border-[var(--c-border-light)] px-2 py-1.5">
                                     <button
                                         type="button"
                                         onClick={clearWorkflowSelection}
@@ -423,13 +458,14 @@ export default function Dashboard() {
                                     ) : (
                                         filteredWorkflows.map((workflow) => {
                                             const workflowId = String(workflow.id);
-                                            const checked = selectedWorkflowSet.has(workflowId);
+                                            const checked = String(selectedWorkflowId) === workflowId;
                                             return (
                                                 <label key={workflowId} className="flex items-center gap-2 rounded px-1 py-1 text-sm text-[var(--c-text-dim)] hover:bg-white/5">
                                                     <input
-                                                        type="checkbox"
+                                                        type="radio"
+                                                        name="workflow-selection"
                                                         checked={checked}
-                                                        onChange={() => toggleWorkflowSelection(workflowId)}
+                                                        onChange={() => selectWorkflow(workflowId)}
                                                     />
                                                     <span className="truncate">{workflow.name || workflowId}</span>
                                                 </label>
@@ -457,6 +493,7 @@ export default function Dashboard() {
                         <input
                             type="date"
                             value={executionRange.to}
+                            max={formatDateInput(new Date())}
                             min={executionRange.from}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, to: event.target.value }))}
                             className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
@@ -473,8 +510,19 @@ export default function Dashboard() {
                         Refresh Data
                     </button>
 
+                    <button
+                        type="button"
+                        onClick={handleExportExcel}
+                        disabled={!canExport}
+                        title={!canExport ? exportDisabledReason : "Export dashboard metrics to Excel"}
+                        className="inline-flex items-center rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-4 py-2 text-sm font-semibold text-[var(--c-text)] transition hover:border-[var(--c-accent)]/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Download size={14} className={`mr-2 ${isExporting ? "animate-pulse" : ""}`} />
+                        {isExporting ? "Exporting..." : "Export Excel (CSV)"}
+                    </button>
+
                     <p className={`text-sm ${rangeError ? "text-rose-400" : "text-gray-400"}`}>
-                        {rangeSummary} {selectedWorkflowIds.length > 0 ? `| Filtered to ${selectedWorkflowIds.length} workflow(s)` : "| Using all workflows"}
+                        {rangeSummary} {selectedWorkflowId ? `| Filtered to workflow ${selectedWorkflowId}` : "| Using all workflows"}
                     </p>
                 </div>
             </div>
@@ -519,10 +567,6 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Bottom Table Section */}
-            <div data-gsap="reveal">
-                <RecentActivityTable selectedWorkflowIds={selectedWorkflowIds} refreshNonce={refreshNonce} />
-            </div>
         </div>
     );
 }
