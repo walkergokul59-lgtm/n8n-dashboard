@@ -10,7 +10,7 @@ import { useSettings } from "../context/SettingsContext";
 export function Layout() {
     const location = useLocation();
     const scrollerRef = useRef(null);
-    const { theme } = useSettings();
+    const { theme, isProfileReady } = useSettings();
 
     useSmoothScroll(scrollerRef, { duration: 0.8 });
 
@@ -19,6 +19,17 @@ export function Layout() {
         ScrollTrigger.defaults({ scroller: scrollerRef.current });
         ScrollTrigger.refresh();
     }, []);
+
+    if (!isProfileReady) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background font-sans text-foreground">
+                <div className="text-center space-y-3">
+                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--c-accent)]/30 border-t-[var(--c-accent)]" />
+                    <p className="text-sm text-gray-400">Loading your workspace...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">

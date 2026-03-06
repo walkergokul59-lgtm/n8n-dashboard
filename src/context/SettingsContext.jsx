@@ -47,25 +47,34 @@ export const SettingsProvider = ({ children }) => {
     const [theme, setThemeState] = useState(() => 'light');
     const { user, apiFetch, isLoading: isAuthLoading } = useAuth();
     const lastFetchedUserId = useRef(null);
+    const [isProfileReady, setIsProfileReady] = useState(false);
 
     // Eagerly fetch client profile when user changes (fixes stale avatar on login)
     useEffect(() => {
         const userId = user?.id || '';
         const userRole = user?.role || '';
 
-        // Clear stale profile when user changes or logs out
+        // Admin or no user — no profile to fetch, mark ready immediately
         if (!userId || userRole === 'admin') {
             if (lastFetchedUserId.current) {
                 setClientProfileState(EMPTY_PROFILE);
                 localStorage.removeItem(PROFILE_KEY);
                 lastFetchedUserId.current = null;
             }
+            setIsProfileReady(true);
             return;
         }
 
-        // Skip if already fetched for this user or still loading auth
-        if (isAuthLoading || lastFetchedUserId.current === userId) return;
+        // Skip if already fetched for this user
+        if (lastFetchedUserId.current === userId) return;
 
+        // Still loading auth — wait
+        if (isAuthLoading) {
+            setIsProfileReady(false);
+            return;
+        }
+
+        setIsProfileReady(false);
         let cancelled = false;
         (async () => {
             try {
@@ -81,7 +90,9 @@ export const SettingsProvider = ({ children }) => {
                 localStorage.setItem(PROFILE_KEY, JSON.stringify(normalized));
                 lastFetchedUserId.current = userId;
             } catch {
-                // Silently fail — Settings page will retry
+                // Mark ready even on error so the app doesn't hang
+            } finally {
+                if (!cancelled) setIsProfileReady(true);
             }
         })();
 
@@ -127,7 +138,8 @@ export const SettingsProvider = ({ children }) => {
         setClientProfile,
         theme,
         toggleTheme,
-    }), [dataSource, setDataSource, clientProfile, setClientProfile, theme, toggleTheme]);
+        isProfileReady,
+    }), [dataSource, setDataSource, clientProfile, setClientProfile, theme, toggleTheme, isProfileReady]);
 
     return (
         <SettingsContext.Provider value={contextValue}>
