@@ -10,6 +10,7 @@ const LIVE_DATASOURCE = 'n8n-server';
 
 const EMPTY_PROFILE = {
     clientName: '',
+    contactCountryCode: '+91',
     contactNumber: '',
     businessName: '',
     primaryEmail: '',

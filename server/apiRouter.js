@@ -29,6 +29,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function emptyOnboardingProfile() {
   return {
     clientName: '',
+    contactCountryCode: '+91',
     contactNumber: '',
     businessName: '',
     primaryEmail: '',
@@ -42,6 +43,7 @@ function normalizeOnboardingProfile(input) {
   const base = emptyOnboardingProfile();
   return {
     clientName: String(source.clientName || base.clientName).trim(),
+    contactCountryCode: String(source.contactCountryCode || base.contactCountryCode).trim(),
     contactNumber: String(source.contactNumber || base.contactNumber).trim(),
     businessName: String(source.businessName || base.businessName).trim(),
     primaryEmail: String(source.primaryEmail || base.primaryEmail).trim(),
@@ -345,6 +347,16 @@ export function createApiRouter(n8n) {
         const profile = normalizeOnboardingProfile(body || {});
         const primaryEmail = String(profile.primaryEmail || '').trim().toLowerCase();
         const secondaryEmail = String(profile.secondaryEmail || '').trim().toLowerCase();
+        const contactCountryCode = String(profile.contactCountryCode || '').trim();
+        const contactNumber = String(profile.contactNumber || '').trim();
+        if (!/^\+\d{1,4}$/.test(contactCountryCode)) {
+          sendJson(res, 400, { error: 'Country code is required in +<digits> format.' });
+          return true;
+        }
+        if (!/^\d{10}$/.test(contactNumber)) {
+          sendJson(res, 400, { error: 'Contact number must be exactly 10 digits.' });
+          return true;
+        }
         if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
           sendJson(res, 400, { error: 'Primary and secondary emails must be different.' });
           return true;

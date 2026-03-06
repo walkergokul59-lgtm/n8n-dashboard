@@ -122,6 +122,7 @@ export default function Settings() {
 
     const normalizedFormData = useMemo(() => ({
         clientName: String(formData?.clientName || ""),
+        contactCountryCode: String(formData?.contactCountryCode || "+91"),
         contactNumber: String(formData?.contactNumber || ""),
         businessName: String(formData?.businessName || ""),
         primaryEmail: String(formData?.primaryEmail || ""),
@@ -132,9 +133,12 @@ export default function Settings() {
     const isFormValid = useMemo(() => {
         const primary = normalizedFormData.primaryEmail.trim().toLowerCase();
         const secondary = normalizedFormData.secondaryEmail.trim().toLowerCase();
+        const isContactNumberValid = /^\d{10}$/.test(normalizedFormData.contactNumber.trim());
+        const isCountryCodeValid = /^\+\d{1,4}$/.test(normalizedFormData.contactCountryCode.trim());
         return (
             Boolean(normalizedFormData.clientName.trim())
-            && Boolean(normalizedFormData.contactNumber.trim())
+            && isContactNumberValid
+            && isCountryCodeValid
             && Boolean(normalizedFormData.businessName.trim())
             && Boolean(primary)
             && Boolean(secondary)
@@ -146,6 +150,17 @@ export default function Settings() {
     const handleInputChange = (event) => {
         const { name, value } = event.target;
         setStatusMessage("");
+        if (name === "contactNumber") {
+            const digitsOnly = value.replace(/\D/g, "").slice(0, 10);
+            setFormData((previous) => ({ ...previous, contactNumber: digitsOnly }));
+            return;
+        }
+        if (name === "contactCountryCode") {
+            const digitsOnly = value.replace(/\D/g, "").slice(0, 4);
+            const nextValue = digitsOnly ? `+${digitsOnly}` : "";
+            setFormData((previous) => ({ ...previous, contactCountryCode: nextValue }));
+            return;
+        }
         setFormData((previous) => ({ ...previous, [name]: value }));
     };
 
@@ -185,6 +200,7 @@ export default function Settings() {
 
         const sanitizedProfile = {
             clientName: normalizedFormData.clientName.trim(),
+            contactCountryCode: normalizedFormData.contactCountryCode.trim(),
             contactNumber: normalizedFormData.contactNumber.trim(),
             businessName: normalizedFormData.businessName.trim(),
             primaryEmail: normalizedFormData.primaryEmail.trim(),
@@ -289,15 +305,34 @@ export default function Settings() {
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Contact Number *</span>
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Country Code (default +91 India) *</span>
                             <input
-                                type="tel"
+                                type="text"
+                                name="contactCountryCode"
+                                required
+                                inputMode="tel"
+                                pattern="\+\d{1,4}"
+                                maxLength={5}
+                                value={normalizedFormData.contactCountryCode}
+                                onChange={handleInputChange}
+                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                placeholder="+91"
+                            />
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Contact Number (10 digits) *</span>
+                            <input
+                                type="text"
                                 name="contactNumber"
                                 required
+                                inputMode="numeric"
+                                pattern="\d{10}"
+                                maxLength={10}
                                 value={normalizedFormData.contactNumber}
                                 onChange={handleInputChange}
                                 className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
-                                placeholder="+1 000 000 0000"
+                                placeholder="10-digit number"
                             />
                         </label>
 

@@ -5,6 +5,7 @@ import { normalizeApprovalStatus } from './accessControl.js';
 function emptyOnboardingProfile() {
   return {
     clientName: '',
+    contactCountryCode: '+91',
     contactNumber: '',
     businessName: '',
     primaryEmail: '',
@@ -18,6 +19,7 @@ function normalizeOnboardingProfile(input) {
   const empty = emptyOnboardingProfile();
   return {
     clientName: String(source.clientName || empty.clientName).trim(),
+    contactCountryCode: String(source.contactCountryCode || empty.contactCountryCode).trim(),
     contactNumber: String(source.contactNumber || empty.contactNumber).trim(),
     businessName: String(source.businessName || empty.businessName).trim(),
     primaryEmail: String(source.primaryEmail || empty.primaryEmail).trim(),

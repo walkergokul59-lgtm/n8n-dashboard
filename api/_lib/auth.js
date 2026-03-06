@@ -34,6 +34,7 @@ export function userView(user) {
 function emptyOnboardingProfile() {
   return {
     clientName: '',
+    contactCountryCode: '+91',
     contactNumber: '',
     businessName: '',
     primaryEmail: '',
@@ -47,6 +48,7 @@ function normalizeOnboardingProfile(input) {
   const base = emptyOnboardingProfile();
   return {
     clientName: String(source.clientName || base.clientName).trim(),
+    contactCountryCode: String(source.contactCountryCode || base.contactCountryCode).trim(),
     contactNumber: String(source.contactNumber || base.contactNumber).trim(),
     businessName: String(source.businessName || base.businessName).trim(),
     primaryEmail: String(source.primaryEmail || base.primaryEmail).trim(),
@@ -233,6 +235,18 @@ export async function writeClientSettings(authUser, nextProfile) {
   const profile = normalizeOnboardingProfile(nextProfile || {});
   const primaryEmail = String(profile.primaryEmail || '').trim().toLowerCase();
   const secondaryEmail = String(profile.secondaryEmail || '').trim().toLowerCase();
+  const contactCountryCode = String(profile.contactCountryCode || '').trim();
+  const contactNumber = String(profile.contactNumber || '').trim();
+  if (!/^\+\d{1,4}$/.test(contactCountryCode)) {
+    const error = new Error('Country code is required in +<digits> format.');
+    error.status = 400;
+    throw error;
+  }
+  if (!/^\d{10}$/.test(contactNumber)) {
+    const error = new Error('Contact number must be exactly 10 digits.');
+    error.status = 400;
+    throw error;
+  }
   if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
     const error = new Error('Primary and secondary emails must be different.');
     error.status = 400;
