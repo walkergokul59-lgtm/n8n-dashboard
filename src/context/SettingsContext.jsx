@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useAuth } from './useAuth';
 
 // Create the Context Object
 const SettingsContext = createContext();
@@ -44,6 +45,48 @@ export const SettingsProvider = ({ children }) => {
     const [dataSource, setDataSourceState] = useState(LIVE_DATASOURCE);
     const [clientProfile, setClientProfileState] = useState(readProfileFromStorage);
     const [theme, setThemeState] = useState(() => 'light');
+    const { user, apiFetch, isLoading: isAuthLoading } = useAuth();
+    const lastFetchedUserId = useRef(null);
+
+    // Eagerly fetch client profile when user changes (fixes stale avatar on login)
+    useEffect(() => {
+        const userId = user?.id || '';
+        const userRole = user?.role || '';
+
+        // Clear stale profile when user changes or logs out
+        if (!userId || userRole === 'admin') {
+            if (lastFetchedUserId.current) {
+                setClientProfileState(EMPTY_PROFILE);
+                localStorage.removeItem(PROFILE_KEY);
+                lastFetchedUserId.current = null;
+            }
+            return;
+        }
+
+        // Skip if already fetched for this user or still loading auth
+        if (isAuthLoading || lastFetchedUserId.current === userId) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const response = await apiFetch('/api/client/settings', {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!response.ok || cancelled) return;
+                const payload = await response.json();
+                const profile = payload?.profile || {};
+                if (cancelled) return;
+                const normalized = { ...EMPTY_PROFILE, ...profile };
+                setClientProfileState(normalized);
+                localStorage.setItem(PROFILE_KEY, JSON.stringify(normalized));
+                lastFetchedUserId.current = userId;
+            } catch {
+                // Silently fail — Settings page will retry
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [user?.id, user?.role, isAuthLoading, apiFetch]);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
