@@ -16,8 +16,6 @@ export function Sidebar() {
         { name: "Dashboard", path: "/dashboard", icon: Grid },
         { name: "AI Agent Logs", path: "/agent-logs", icon: FileText },
         { name: "Invoice Runs", path: "/invoice-runs", icon: File },
-        { name: "Order Sync", path: "/order-sync", icon: RefreshCw },
-        { name: "SMS Outreach", path: "/sms-outreach", icon: MessageSquare },
         { name: "Settings", path: "/settings", icon: Settings },
     ];
     const navItems = isApproved

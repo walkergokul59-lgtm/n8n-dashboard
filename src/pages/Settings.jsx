@@ -10,8 +10,6 @@ const PROFILE_IMAGE_QUALITY = 0.82;
 const ALLOWED_IMAGE_TYPES = new Set([
     "image/png",
     "image/jpeg",
-    "image/webp",
-    "image/gif",
 ]);
 
 const fileToDataUrl = (file) => new Promise((resolve, reject) => {
@@ -42,6 +40,13 @@ const optimizeImageDataUrl = (dataUrl) => new Promise((resolve, reject) => {
         context.drawImage(image, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", PROFILE_IMAGE_QUALITY));
     };
+    image.onerror = () => reject(new Error("Could not process the selected image."));
+    image.src = dataUrl;
+});
+
+const readImageDimensions = (dataUrl) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.width, height: image.height });
     image.onerror = () => reject(new Error("Could not process the selected image."));
     image.src = dataUrl;
 });
@@ -161,7 +166,17 @@ export default function Settings() {
             setFormData((previous) => ({ ...previous, contactCountryCode: nextValue }));
             return;
         }
-        setFormData((previous) => ({ ...previous, [name]: value }));
+        setFormData((previous) => {
+            const next = { ...previous, [name]: value };
+            if (name === "primaryEmail" || name === "secondaryEmail") {
+                const primary = String(next.primaryEmail || "").trim().toLowerCase();
+                const secondary = String(next.secondaryEmail || "").trim().toLowerCase();
+                if (primary && secondary && primary === secondary) {
+                    setStatusMessage("Use different emails.");
+                }
+            }
+            return next;
+        });
     };
 
     const handleImageChange = async (event) => {
@@ -171,7 +186,7 @@ export default function Settings() {
         setStatusMessage("");
 
         if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-            setStatusMessage("Please upload a PNG, JPG, WebP, or GIF image.");
+            setStatusMessage("Please upload a PNG or JPG/JPEG image.");
             return;
         }
 
@@ -182,6 +197,11 @@ export default function Settings() {
 
         try {
             const rawDataUrl = await fileToDataUrl(file);
+            const { width, height } = await readImageDimensions(rawDataUrl);
+            if (width !== height) {
+                setStatusMessage("Profile image must be a square (equal width and height).");
+                return;
+            }
             const optimizedDataUrl = await optimizeImageDataUrl(rawDataUrl);
             setFormData((previous) => ({ ...previous, profileImage: optimizedDataUrl }));
             setStatusMessage("Image added. Click Save Profile to persist details.");
@@ -194,7 +214,7 @@ export default function Settings() {
         event.preventDefault();
 
         if (!isFormValid) {
-            setStatusMessage("Please complete all mandatory profile fields. Primary and secondary emails must be different.");
+            setStatusMessage("Please complete all mandatory profile fields. Use different emails.");
             return;
         }
 
@@ -211,7 +231,7 @@ export default function Settings() {
         const primaryEmail = sanitizedProfile.primaryEmail.toLowerCase();
         const secondaryEmail = sanitizedProfile.secondaryEmail.toLowerCase();
         if (primaryEmail && secondaryEmail && primaryEmail === secondaryEmail) {
-            setStatusMessage("Primary and secondary emails must be different.");
+            setStatusMessage("Use different emails.");
             return;
         }
 
@@ -255,30 +275,6 @@ export default function Settings() {
                     </p>
                 </div>
             ) : null}
-
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 flex items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-sm font-semibold text-emerald-300">Live n8n Mode</h2>
-                    <p className="text-xs text-emerald-200/80">Dashboard is configured to use live n8n server data by default.</p>
-                </div>
-                <div className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                    <BadgeCheck size={14} className="mr-2" />
-                    {dataSource}
-                </div>
-            </div>
-
-            <div className={`rounded-xl border px-4 py-3 ${
-                approvalStatus === "approved"
-                    ? "border-emerald-500/20 bg-emerald-500/10"
-                    : "border-amber-500/20 bg-amber-500/10"
-            }`}>
-                <h2 className="text-sm font-semibold text-[var(--c-text)]">Approval Status: {approvalStatus}</h2>
-                <p className="text-xs text-gray-300">
-                    {approvalStatus === "approved"
-                        ? "Your account is approved. Dashboard access is enabled."
-                        : "Your account is restricted until root admin approves your signup."}
-                </p>
-            </div>
 
             <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/70 overflow-hidden">
                 <div className="border-b border-[var(--c-border-light)] px-6 py-5">
@@ -390,7 +386,7 @@ export default function Settings() {
                                 <span className="text-sm font-medium text-[var(--c-text-dim)]">Profile Image *</span>
                                 <input
                                     type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/gif"
+                                    accept="image/png,image/jpeg"
                                     onChange={handleImageChange}
                                     required={!normalizedFormData.profileImage}
                                     className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--c-accent)]"
