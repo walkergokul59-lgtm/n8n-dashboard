@@ -9,7 +9,7 @@ import { useSettings } from "../context/SettingsContext";
 const ROUTE_LABELS = {
     "/": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
     "/dashboard": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },
-    "/agent-logs": { title: "AI Agent Logs", subtitle: "Monitor AI agent executions and output logs" },
+    "/support": { title: "Support Chat", subtitle: "Create tickets, reply to clients, and resolve issues" },
     "/invoice-runs": { title: "Invoice Runs", subtitle: "Track automated invoice generation workflows" },
     "/order-sync": { title: "Order Sync", subtitle: "Manage e-commerce order synchronization" },
     "/sms-outreach": { title: "SMS Outreach", subtitle: "View and manage automated SMS campaigns" },
@@ -32,13 +32,14 @@ export function Header() {
     const userMenuRef = useRef(null);
     const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [ticketPlaceholderMessage, setTicketPlaceholderMessage] = useState("");
     const [helpMenuPosition, setHelpMenuPosition] = useState({ top: 0, left: 0 });
     const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, left: 0 });
-    const currentRouteInfo = ROUTE_LABELS[location.pathname] || {
-        title: "Page Not Found",
-        subtitle: "The requested page does not exist.",
-    };
+    const currentRouteInfo = location.pathname.startsWith("/support/")
+        ? ROUTE_LABELS["/support"]
+        : (ROUTE_LABELS[location.pathname] || {
+            title: "Page Not Found",
+            subtitle: "The requested page does not exist.",
+        });
     const isClientUser = user?.role === "client";
     const avatarLabel = isClientUser ? (clientProfile?.clientName || user?.email || "N") : (user?.email || "N");
     const showClientProfileImage = isClientUser && Boolean(clientProfile?.profileImage);
@@ -164,12 +165,6 @@ export function Header() {
         };
     }, [isUserMenuOpen]);
 
-    useEffect(() => {
-        if (!ticketPlaceholderMessage) return;
-        const timer = setTimeout(() => setTicketPlaceholderMessage(""), 2500);
-        return () => clearTimeout(timer);
-    }, [ticketPlaceholderMessage]);
-
     return (
         <header ref={rootRef} className="h-20 bg-[var(--c-bg)] border-b border-[var(--c-border)] flex flex-col justify-center px-8 shrink-0 relative overflow-visible">
             {/* Decorative gradient orb */}
@@ -229,11 +224,6 @@ export function Header() {
                         )}
                     </button>
                 </div>
-                {ticketPlaceholderMessage ? (
-                    <p className="absolute top-full right-8 mt-2 text-xs text-gray-400">
-                        {ticketPlaceholderMessage}
-                    </p>
-                ) : null}
             </div>
             {isHelpMenuOpen && typeof document !== "undefined"
                 ? createPortal(
@@ -271,11 +261,11 @@ export function Header() {
                             role="menuitem"
                             className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
                             onClick={() => {
-                                setTicketPlaceholderMessage("Customer support ticket system coming soon.");
                                 setIsHelpMenuOpen(false);
+                                navigate("/support");
                             }}
                         >
-                            Customer Ticket (Placeholder)
+                            Open Support Chat
                         </button>
                     </div>,
                     document.body

@@ -16,17 +16,19 @@ export default function Login() {
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const requestedPath = `${location.state?.from?.pathname || ''}${location.state?.from?.search || ''}${location.state?.from?.hash || ''}`;
 
     if (!isLoading && isAuthenticated) {
-        const nextPath = location.state?.from?.pathname
+        const nextPath = requestedPath
             || (isAdmin ? '/admin' : (isApproved ? '/dashboard' : '/settings'));
         return <Navigate to={nextPath} replace />;
     }
 
     const targetPathForUser = (nextUser) => {
+        if (requestedPath) return requestedPath;
         if (nextUser?.role === 'admin') return '/admin';
         if (nextUser?.approvalStatus !== 'approved') return '/settings';
-        return location.state?.from?.pathname || '/dashboard';
+        return '/dashboard';
     };
 
     const onSignInSubmit = async (event) => {

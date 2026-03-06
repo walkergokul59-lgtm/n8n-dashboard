@@ -49,6 +49,8 @@ N8N_AUTH_TYPE=bearer                      # Auth method
 KV_REST_API_URL=<vercel-kv-url>          # (optional) Vercel KV for persistent RBAC
 KV_REST_API_TOKEN=<vercel-kv-token>      # (optional) Vercel KV token
 RBAC_KV_KEY=n8n:rbac                      # (optional) KV key prefix (default: n8n:rbac)
+SUPPORT_KV_KEY=n8n:support                # (optional) KV key for support tickets (default: n8n:support)
+SUPPORT_CONFIG_PATH=data/support.json     # (optional) File path for support data (default: data/support.json)
 ```
 
 **Important**: `.env` is local-only; Vercel functions use their own env vars. See README for more details.
@@ -82,6 +84,8 @@ RBAC_KV_KEY=n8n:rbac                      # (optional) KV key prefix (default: n
 - `/sms-outreach` — SMS campaign execution logs
 - `/settings` — App configuration (data source mode, n8n instance URL); renders `AdminSettings.jsx` for admins or `Settings.jsx` for clients
 - `/admin` — Admin panel (users, roles, workflow allowlists) — **admin-only**
+- `/support` — Support ticket list (client-facing support chat)
+- `/support/:ticketId` — Individual support ticket thread
 - `/login` — Authentication page (shown if not logged in)
 
 ### Data Management
@@ -170,6 +174,28 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 
 **Vercel Persistence**: By default, RBAC is in-memory and resets on cold start. To persist admin changes (user/client mappings), wire `rbacStore.js` to Vercel KV (set `KV_REST_API_URL`, `KV_REST_API_TOKEN`).
 
+### Support Chat
+
+The app includes a **support ticket system** for client-support agent communication.
+
+**Key Files**:
+- **`src/pages/SupportChat.jsx`** — Frontend support chat UI (ticket list + thread view)
+- **`server/supportStore.js`** — Support ticket persistence (in-memory, KV, or disk)
+- **`data/support.json`** — Local support data store (development)
+- **`api/support/`** — Serverless endpoints for ticket operations
+
+**Data Structure**:
+- Tickets have: id, clientId, subject, status (open/closed), messages array, timestamps
+- Messages contain: authorUserId, authorRole (admin/client), body, createdAt
+- Status flow: open → closed (can be reopened)
+
+**Persistence** (similar to RBAC):
+- **Local dev**: File-based (`data/support.json`) with in-memory cache
+- **Vercel production**: Vercel KV (if configured) with disk fallback
+- Set `SUPPORT_KV_KEY` (default: `n8n:support`) in Vercel environment variables
+
+**Access Control**: Clients see only their own tickets; admins see all tickets.
+
 ### Server Details (`server/`)
 
 - **index.js**: HTTP server, Vite middleware integration, static file serving
@@ -180,6 +206,7 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 - **accessControl.js**: RBAC utility functions (user lookup, permission checks)
 - **tokenAuth.js**: JWT token validation middleware
 - **rbacStore.js**: User/client/workflow mapping storage (in-memory or KV)
+- **supportStore.js**: Support ticket persistence (in-memory, KV, or file-based storage — similar to RBAC pattern)
 - **httpUtils.js**: HTTP response helpers
 
 ### Vercel Serverless Functions (`api/`)
@@ -197,7 +224,11 @@ Production deployment uses Vercel serverless functions instead of Node server:
 - **`api/dashboard/health.js`** — System health check
 - **`api/dashboard/stream.js`** — Real-time execution updates
 - **`api/admin/rbac.js`** — Admin panel: user/client/workflow management
+- **`api/support/list.js`** — List support tickets (client-scoped)
+- **`api/support/create.js`** — Create new support ticket
+- **`api/support/thread.js`** — Get/update support ticket thread
 - **`api/_lib/auth.js`** — Shared auth logic (JWT, RBAC)
+- **`api/_lib/support.js`** — Shared support utilities
 - **`api/dashboard/_client.js`** — Shared n8n client utilities
 
 These functions handle the same logic as `server/` but in serverless context. They require Vercel environment variables (set in Vercel dashboard): `N8N_BASE_URL`, `N8N_API_TOKEN`, `N8N_API_BASE_PATH`, etc.

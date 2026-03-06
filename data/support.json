@@ -1,0 +1,121 @@
+{
+  "tickets": [
+    {
+      "id": "tck_mmee4afb541e",
+      "clientId": "client1",
+      "clientUserId": "user-client1",
+      "clientName": "Neeranjan Shankar",
+      "clientEmail": "client1@gmail.com",
+      "subject": "Not working dark mode",
+      "status": "open",
+      "createdAt": "2026-03-06T04:24:22.727Z",
+      "updatedAt": "2026-03-06T04:24:22.727Z",
+      "closedAt": null,
+      "closedByUserId": null,
+      "messages": [
+        {
+          "id": "msg_mmee4afb9d4l",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "Hi the dark mode is not working properly requesting immidiate fix please !!",
+          "createdAt": "2026-03-06T04:24:22.727Z"
+        }
+      ]
+    },
+    {
+      "id": "tck_mmedutoajqv",
+      "clientId": "client1",
+      "clientUserId": "user-client1",
+      "clientName": "Neeranjan Shankar",
+      "clientEmail": "client1@gmail.com",
+      "subject": "The ticket behaviour is bad",
+      "status": "closed",
+      "createdAt": "2026-03-06T04:17:01.114Z",
+      "updatedAt": "2026-03-06T04:23:54.641Z",
+      "closedAt": "2026-03-06T04:23:54.641Z",
+      "closedByUserId": "user-admin",
+      "messages": [
+        {
+          "id": "msg_mmedutoa9qp0",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "pls fix as in subject",
+          "createdAt": "2026-03-06T04:17:01.114Z"
+        },
+        {
+          "id": "msg_mmedvzmo3wjq",
+          "authorUserId": "user-admin",
+          "authorRole": "admin",
+          "authorLabel": "root@gmail.com",
+          "body": "what part of the ticket is bad may i know",
+          "createdAt": "2026-03-06T04:17:55.488Z"
+        },
+        {
+          "id": "msg_mmedzurrc5j4",
+          "authorUserId": "user-mmedwsqh6bic",
+          "authorRole": "admin",
+          "authorLabel": "mouli@gmail.com",
+          "body": "hi i am here to assissit u",
+          "createdAt": "2026-03-06T04:20:55.815Z"
+        },
+        {
+          "id": "msg_mmee0uj93gio",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "can you send me an image attachement with what is wrong from ur end",
+          "createdAt": "2026-03-06T04:21:42.165Z"
+        },
+        {
+          "id": "msg_mmee11gdbu0c",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "hi",
+          "createdAt": "2026-03-06T04:21:51.133Z"
+        }
+      ]
+    },
+    {
+      "id": "tck_mmecumiijd3l",
+      "clientId": "client1",
+      "clientUserId": "user-client1",
+      "clientName": "Neeranjan Shankar",
+      "clientEmail": "client1@gmail.com",
+      "subject": "hi",
+      "status": "closed",
+      "createdAt": "2026-03-06T03:48:52.218Z",
+      "updatedAt": "2026-03-06T04:16:13.351Z",
+      "closedAt": "2026-03-06T04:16:13.351Z",
+      "closedByUserId": "user-admin",
+      "messages": [
+        {
+          "id": "msg_mmecumiihxh3",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "frefsdf",
+          "createdAt": "2026-03-06T03:48:52.218Z"
+        },
+        {
+          "id": "msg_mmecvzhc9ibk",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar",
+          "body": "pls help i want this error to be fixed fast",
+          "createdAt": "2026-03-06T03:49:55.680Z"
+        },
+        {
+          "id": "msg_mmedta825lic",
+          "authorUserId": "user-admin",
+          "authorRole": "admin",
+          "authorLabel": "root@gmail.com",
+          "body": "what u want",
+          "createdAt": "2026-03-06T04:15:49.250Z"
+        }
+      ]
+    }
+  ]
+}

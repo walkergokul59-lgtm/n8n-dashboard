@@ -1,11 +1,11 @@
 import React, { Component, useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SettingsProvider } from "./context/SettingsContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/useAuth";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
-import AIAgentLogs from "./pages/AIAgentLogs";
+import SupportChat from "./pages/SupportChat";
 import InvoiceRuns from "./pages/InvoiceRuns";
 import OrderSync from "./pages/OrderSync";
 import SmsOutreach from "./pages/SmsOutreach";
@@ -49,13 +49,14 @@ class ErrorBoundary extends Component {
 
 function RequireAuth({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking session...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return children;
@@ -63,13 +64,14 @@ function RequireAuth({ children }) {
 
 function RequireAdmin({ children }) {
   const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking access...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (!isAdmin) {
@@ -81,13 +83,14 @@ function RequireAdmin({ children }) {
 
 function RequireApprovedClient({ children }) {
   const { isAuthenticated, isLoading, isAdmin, isApproved } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking approval...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (!isAdmin && !isApproved) {
@@ -156,7 +159,8 @@ function App() {
               >
                 <Route index element={<HomeRedirect />} />
                 <Route path="dashboard" element={<RequireApprovedClient><Dashboard /></RequireApprovedClient>} />
-                <Route path="agent-logs" element={<RequireApprovedClient><AIAgentLogs /></RequireApprovedClient>} />
+                <Route path="support" element={<RequireApprovedClient><SupportChat /></RequireApprovedClient>} />
+                <Route path="support/:ticketId" element={<RequireApprovedClient><SupportChat /></RequireApprovedClient>} />
                 <Route path="invoice-runs" element={<RequireApprovedClient><InvoiceRuns /></RequireApprovedClient>} />
                 <Route path="order-sync" element={<RequireApprovedClient><OrderSync /></RequireApprovedClient>} />
                 <Route path="sms-outreach" element={<RequireApprovedClient><SmsOutreach /></RequireApprovedClient>} />

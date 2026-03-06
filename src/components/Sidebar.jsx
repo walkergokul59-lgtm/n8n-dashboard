@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Grid, FileText, File, RefreshCw, MessageSquare, Settings, Shield } from "lucide-react";
+import { Grid, File, MessageSquare, Settings, Shield } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAuth } from "../context/useAuth";
@@ -14,7 +14,7 @@ export function Sidebar() {
 
     const fullNavItems = [
         { name: "Dashboard", path: "/dashboard", icon: Grid },
-        { name: "AI Agent Logs", path: "/agent-logs", icon: FileText },
+        { name: "Support Chat", path: "/support", icon: MessageSquare },
         { name: "Invoice Runs", path: "/invoice-runs", icon: File },
         { name: "Settings", path: "/settings", icon: Settings },
     ];

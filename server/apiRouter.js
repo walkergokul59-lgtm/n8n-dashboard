@@ -18,6 +18,13 @@ import {
   verifyResetToken,
 } from '../api/_lib/resetCodes.js';
 import { sendResetCodeEmail } from '../api/_lib/email.js';
+import {
+  addSupportTicketMessage,
+  closeSupportTicket,
+  createSupportTicket,
+  listSupportTickets,
+  readSupportTicket,
+} from '../api/_lib/support.js';
 import { buildOverview, checkHealth, countExecutionsInRange, listRecentExecutions, listWorkflows } from './dashboardCore.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from './rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from './tokenAuth.js';
@@ -80,6 +87,12 @@ function tokenFromReq(req) {
   const headerToken = extractBearerTokenFromHeaders(req.headers || {});
   if (headerToken) return headerToken;
   return getQueryParam(req.url, 'token');
+}
+
+function matchSupportTicketId(pathname, action = '') {
+  const normalizedAction = action ? `/${action}` : '';
+  const match = pathname.match(new RegExp(`^/api/support/([^/]+)${normalizedAction}$`));
+  return match ? decodeURIComponent(match[1]) : '';
 }
 
 async function requireUser(req, res) {
@@ -396,6 +409,53 @@ export function createApiRouter(n8n) {
           approvalStatus: normalizeApprovalStatus(savedUser?.approvalStatus, 'pending'),
           profile: normalizeOnboardingProfile(savedClient?.onboardingProfile),
         });
+        return true;
+      }
+
+      if (pathname === '/api/support' && method === 'GET') {
+        const auth = await requireUser(req, res);
+        if (!auth) return true;
+
+        sendJson(res, 200, await listSupportTickets(auth.user, {
+          status: url.searchParams.get('status'),
+        }));
+        return true;
+      }
+
+      if (pathname === '/api/support' && method === 'POST') {
+        const auth = await requireUser(req, res);
+        if (!auth) return true;
+
+        const body = await readJsonBody(req);
+        sendJson(res, 201, await createSupportTicket(auth.user, body || {}, req));
+        return true;
+      }
+
+      const supportTicketId = matchSupportTicketId(pathname);
+      if (supportTicketId && method === 'GET') {
+        const auth = await requireUser(req, res);
+        if (!auth) return true;
+
+        sendJson(res, 200, await readSupportTicket(auth.user, supportTicketId));
+        return true;
+      }
+
+      const supportMessageTicketId = matchSupportTicketId(pathname, 'messages');
+      if (supportMessageTicketId && method === 'POST') {
+        const auth = await requireUser(req, res);
+        if (!auth) return true;
+
+        const body = await readJsonBody(req);
+        sendJson(res, 200, await addSupportTicketMessage(auth.user, supportMessageTicketId, body || {}));
+        return true;
+      }
+
+      const supportCloseTicketId = matchSupportTicketId(pathname, 'close');
+      if (supportCloseTicketId && method === 'POST') {
+        const auth = await requireUser(req, res);
+        if (!auth) return true;
+
+        sendJson(res, 200, await closeSupportTicket(auth.user, supportCloseTicketId));
         return true;
       }
 
