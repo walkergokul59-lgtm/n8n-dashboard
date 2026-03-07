@@ -15,10 +15,19 @@ export function Layout() {
     useSmoothScroll(scrollerRef, { duration: 0.8 });
 
     useLayoutEffect(() => {
-        if (!scrollerRef.current) return;
-        ScrollTrigger.defaults({ scroller: scrollerRef.current });
-        ScrollTrigger.refresh();
-    }, []);
+        if (!scrollerRef.current) return undefined;
+
+        const scroller = scrollerRef.current;
+        ScrollTrigger.defaults({ scroller });
+
+        const refreshId = window.requestAnimationFrame(() => {
+            ScrollTrigger.refresh();
+        });
+
+        return () => {
+            window.cancelAnimationFrame(refreshId);
+        };
+    }, [location.pathname, theme]);
 
     if (!isProfileReady) {
         return (
@@ -36,6 +45,7 @@ export function Layout() {
             {theme === 'dark' && (
                 <div className="pointer-events-none absolute inset-0 z-0">
                     <LightPillar
+                        key="dark-light-pillar"
                         topColor="#9DFFFF"
                         bottomColor="#00D6E6"
                         intensity={1.05}
@@ -46,7 +56,7 @@ export function Layout() {
                         noiseIntensity={0.28}
                         mixBlendMode="screen"
                         pillarRotation={-12}
-                        quality="high"
+                        quality="medium"
                     />
                 </div>
             )}

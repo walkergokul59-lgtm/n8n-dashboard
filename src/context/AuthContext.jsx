@@ -61,6 +61,31 @@ export function AuthProvider({ children }) {
         return saveSession(payload);
     }, [saveSession]);
 
+    const authenticateWithGoogle = useCallback(async ({ credential, mode, clientName }) => {
+        const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ credential, mode, clientName }),
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload?.error || 'Google authentication failed');
+        }
+
+        const payload = await response.json();
+        return saveSession(payload);
+    }, [saveSession]);
+
+    const loginWithGoogle = useCallback(async (credential) => {
+        return authenticateWithGoogle({ credential, mode: 'signin' });
+    }, [authenticateWithGoogle]);
+
+    const signupWithGoogle = useCallback(async ({ credential, clientName }) => {
+        return authenticateWithGoogle({ credential, mode: 'signup', clientName });
+    }, [authenticateWithGoogle]);
+
     const refreshUser = useCallback(async () => {
         if (!token) {
             setUser(null);
@@ -122,10 +147,12 @@ export function AuthProvider({ children }) {
         isApproved: user?.role === 'admin' || user?.approvalStatus === 'approved',
         login,
         signup,
+        loginWithGoogle,
+        signupWithGoogle,
         refreshUser,
         logout,
         apiFetch,
-    }), [token, user, isLoading, login, signup, refreshUser, logout, apiFetch]);
+    }), [token, user, isLoading, login, signup, loginWithGoogle, signupWithGoogle, refreshUser, logout, apiFetch]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

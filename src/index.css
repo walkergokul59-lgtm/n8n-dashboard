@@ -9,8 +9,8 @@
 
 @layer base {
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--c-bg);
+    color: var(--c-text);
     margin: 0;
     padding: 0;
     font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -83,12 +83,79 @@
   --c-info: #40e1fa;
 }
 
+/* ─── Dark Mode Theme ─────────────────────────────────────────── */
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  /* Primary Colors */
+  --c-primary: #00d2d2;
+  --c-primary-dark: #0f1419;
+  --c-primary-grey: #6b7280;
+
+  /* Background & Surfaces */
+  --c-bg: #0f1419;
+  --c-surface: #1a2232;
+  --c-raised: #1e2a3a;
+  --c-hover: #243044;
+  --c-hover2: #2a3650;
+
+  /* Borders & Outlines */
+  --c-border: #2a3650;
+  --c-border-sub: #243044;
+  --c-border-light: #243044;
+  --c-outline: #243044;
+  --c-outline-white: #1a2232;
+
+  /* Text Colors */
+  --c-text: #e0e6f0;
+  --c-text-dim: #9aa5b8;
+  --c-text-muted: #6b7280;
+  --c-text-subtle: #4b5563;
+
+  /* Accent Colors */
+  --c-accent: #00d2d2;
+  --c-accent-hover: #00f0f0;
+  --c-accent-pink: #ff6b8a;
+  --c-accent-cyan: #00d2d2;
+  --c-accent-green: #5dd9a0;
+  --c-accent-orange: #f59e0b;
+
+  /* Status Colors */
+  --c-success: #5dd9a0;
+  --c-warning: #f59e0b;
+  --c-error: #ff6b8a;
+  --c-info: #00d2d2;
+
+  /* Tailwind color-background / color-foreground overrides */
+  --color-background: #0f1419;
+  --color-foreground: #e0e6f0;
+}
+
+/* Dark mode: show neon decorative elements */
+[data-theme="dark"] .dark-only { display: block !important; }
+
+/* Dark mode: colored glows on primary shadows */
+[data-theme="dark"] [class*="shadow-primary"] {
+  box-shadow: 0 4px 24px rgba(0, 210, 210, 0.18) !important;
+}
+
 /* Light mode: hide neon decorative blur orbs */
 .dark-only { display: none !important; }
 
 /* Light mode: neutral shadows instead of colored glows */
 [class*="shadow-primary"] {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Only transition hover/focus states, NOT theme changes (instant) */
+@media (prefers-reduced-motion: no-preference) {
+  button:hover, button:focus,
+  [role="button"]:hover, [role="button"]:focus,
+  input:focus, select:focus, textarea:focus,
+  .card:hover, .tab-button:hover, .tab-button.active,
+  .pagination-item:hover, .pagination-item.active,
+  .badge:hover {
+    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  }
 }
 
 /* Buttons: Primary (CRM UI Kit style) */

@@ -7,6 +7,8 @@ This is a React + Vite dashboard with a small Node server that securely connects
 1. Create a `.env` from `.env.example` and set:
    - `N8N_BASE_URL` (example: `http://localhost:5678`)
    - `N8N_API_TOKEN` (your n8n API token)
+   - `APP_AUTH_SECRET` (long random string for dashboard sessions)
+   - `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` if you want Google sign-in/sign-up enabled
 
 2. Install deps and run dev server:
    - `npm install`
@@ -22,6 +24,11 @@ Default test users:
 
 - Admin: `root@gmail.com` / `root`
 - Client: `client1@gmail.com` / `client1`
+
+Google auth notes:
+
+- Existing users can use **Sign In with Google** if their Google account email matches the dashboard user email.
+- New client users can use **Sign Up with Google** and will still require admin approval before dashboard access.
 
 Admin can open `/admin` to:
 

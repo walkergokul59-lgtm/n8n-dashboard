@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { useAuth } from '../context/useAuth';
 
 export default function Login() {
-    const { login, signup, isAdmin, isApproved, isAuthenticated, isLoading } = useAuth();
+    const { login, signup, loginWithGoogle, signupWithGoogle, isAdmin, isApproved, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [mode, setMode] = useState('signin');
@@ -41,6 +42,38 @@ export default function Login() {
             navigate(targetPathForUser(loggedInUser), { replace: true });
         } catch (err) {
             setError(err?.message || 'Failed to login');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const onGoogleSignIn = async (credential) => {
+        setError('');
+        setInfo('');
+        setIsSubmitting(true);
+        try {
+            const loggedInUser = await loginWithGoogle(credential);
+            navigate(targetPathForUser(loggedInUser), { replace: true });
+        } catch (err) {
+            setError(err?.message || 'Failed to login with Google');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const onGoogleSignUp = async (credential) => {
+        setError('');
+        setInfo('');
+        setIsSubmitting(true);
+        try {
+            await signupWithGoogle({
+                credential,
+                clientName: signupClientName,
+            });
+            setInfo('Signup successful. Complete onboarding details in Settings while your account is pending approval.');
+            navigate('/settings', { replace: true, state: { fromSignup: true } });
+        } catch (err) {
+            setError(err?.message || 'Failed to signup with Google');
         } finally {
             setIsSubmitting(false);
         }
@@ -110,45 +143,60 @@ export default function Login() {
                 </div>
 
                 {mode === 'signin' ? (
-                    <form onSubmit={onSignInSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
-                            <input
-                                type="email"
-                                value={loginEmail}
-                                onChange={(event) => setLoginEmail(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
-                            <input
-                                type="password"
-                                value={loginPassword}
-                                onChange={(event) => setLoginPassword(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                required
-                            />
-                        </div>
-
-                        {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
-
-                        <button
-                            type="submit"
+                    <div className="space-y-4">
+                        <GoogleAuthButton
+                            mode="signin"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
-                        >
-                            {isSubmitting ? 'Signing in...' : 'Sign In'}
-                        </button>
-                        <div className="text-center mt-2">
-                            <Link to="/reset-password" className="text-sm text-[var(--c-accent)] hover:underline">
-                                Forgot Password?
-                            </Link>
+                            onCredential={onGoogleSignIn}
+                            onError={(err) => setError(err?.message || 'Google authentication failed')}
+                        />
+
+                        <div className="flex items-center gap-3">
+                            <div className="h-px flex-1 bg-[var(--c-border)]" />
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--c-text-subtle)]">or</span>
+                            <div className="h-px flex-1 bg-[var(--c-border)]" />
                         </div>
-                    </form>
+
+                        <form onSubmit={onSignInSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
+                                <input
+                                    type="email"
+                                    value={loginEmail}
+                                    onChange={(event) => setLoginEmail(event.target.value)}
+                                    className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
+                                <input
+                                    type="password"
+                                    value={loginPassword}
+                                    onChange={(event) => setLoginPassword(event.target.value)}
+                                    className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
+                                    required
+                                />
+                            </div>
+
+                            {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
+                            >
+                                {isSubmitting ? 'Signing in...' : 'Sign In'}
+                            </button>
+                            <div className="text-center mt-2">
+                                <Link to="/reset-password" className="text-sm text-[var(--c-accent)] hover:underline">
+                                    Forgot Password?
+                                </Link>
+                            </div>
+                        </form>
+                    </div>
                 ) : (
-                    <form onSubmit={onSignUpSubmit} className="space-y-4">
+                    <div className="space-y-4">
                         <div>
                             <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Client Name</label>
                             <input
@@ -156,52 +204,71 @@ export default function Login() {
                                 value={signupClientName}
                                 onChange={(event) => setSignupClientName(event.target.value)}
                                 className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                placeholder="Acme Inc."
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
-                            <input
-                                type="email"
-                                value={signupEmail}
-                                onChange={(event) => setSignupEmail(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
-                            <input
-                                type="password"
-                                value={signupPassword}
-                                onChange={(event) => setSignupPassword(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Confirm Password</label>
-                            <input
-                                type="password"
-                                value={signupConfirmPassword}
-                                onChange={(event) => setSignupConfirmPassword(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                required
+                                placeholder="Acme Inc. (optional for Google sign up)"
                             />
                         </div>
 
-                        {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
-                        {info ? <p className="text-sm text-[var(--c-success)]">{info}</p> : null}
-
-                        <button
-                            type="submit"
+                        <GoogleAuthButton
+                            mode="signup"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
-                        >
-                            {isSubmitting ? 'Creating account...' : 'Sign Up'}
-                        </button>
-                    </form>
+                            onCredential={onGoogleSignUp}
+                            onError={(err) => setError(err?.message || 'Google authentication failed')}
+                        />
+
+                        <p className="text-xs text-[var(--c-text-subtle)]">
+                            Leave Client Name blank to use your Google profile name.
+                        </p>
+
+                        <div className="flex items-center gap-3">
+                            <div className="h-px flex-1 bg-[var(--c-border)]" />
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--c-text-subtle)]">or</span>
+                            <div className="h-px flex-1 bg-[var(--c-border)]" />
+                        </div>
+
+                        <form onSubmit={onSignUpSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
+                                <input
+                                    type="email"
+                                    value={signupEmail}
+                                    onChange={(event) => setSignupEmail(event.target.value)}
+                                    className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Password</label>
+                                <input
+                                    type="password"
+                                    value={signupPassword}
+                                    onChange={(event) => setSignupPassword(event.target.value)}
+                                    className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Confirm Password</label>
+                                <input
+                                    type="password"
+                                    value={signupConfirmPassword}
+                                    onChange={(event) => setSignupConfirmPassword(event.target.value)}
+                                    className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
+                                    required
+                                />
+                            </div>
+
+                            {error ? <p className="text-sm text-[var(--c-error)]">{error}</p> : null}
+                            {info ? <p className="text-sm text-[var(--c-success)]">{info}</p> : null}
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 disabled:opacity-70 transition-all"
+                            >
+                                {isSubmitting ? 'Creating account...' : 'Sign Up'}
+                            </button>
+                        </form>
+                    </div>
                 )}
 
                 <div className="mt-6 text-xs text-[var(--c-text-subtle)] space-y-1">

@@ -17,6 +17,7 @@ import {
   issueResetToken,
   verifyResetToken,
 } from '../api/_lib/resetCodes.js';
+import { loginWithGoogle, signupClientUserWithGoogle } from '../api/_lib/auth.js';
 import { sendResetCodeEmail } from '../api/_lib/email.js';
 import {
   addSupportTicketMessage,
@@ -219,6 +220,31 @@ export function createApiRouter(n8n) {
         );
 
         sendJson(res, 201, { token, user: userView(createdUser) });
+        return true;
+      }
+
+      if (pathname === '/api/auth/google' && method === 'POST') {
+        const body = await readJsonBody(req);
+        const mode = String(body?.mode || 'signin').trim().toLowerCase();
+        const credential = String(body?.credential || '').trim();
+        const clientName = String(body?.clientName || '').trim();
+
+        if (!credential) {
+          sendJson(res, 400, { error: 'Google credential is required' });
+          return true;
+        }
+
+        if (mode === 'signup') {
+          sendJson(res, 201, await signupClientUserWithGoogle({ credential, clientName }));
+          return true;
+        }
+
+        if (mode !== 'signin') {
+          sendJson(res, 400, { error: 'Invalid Google auth mode' });
+          return true;
+        }
+
+        sendJson(res, 200, await loginWithGoogle(credential));
         return true;
       }
 

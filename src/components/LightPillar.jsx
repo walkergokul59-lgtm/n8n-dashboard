@@ -25,15 +25,13 @@ const LightPillar = ({
   const geometryRef = useRef(null);
   const mouseRef = useRef(new THREE.Vector2(0, 0));
   const timeRef = useRef(0);
-  const [webGLSupported, setWebGLSupported] = useState(true);
-
-  useEffect(() => {
+  const interactionUntilRef = useRef(0);
+  const visibilityRef = useRef(true);
+  const [webGLSupported, setWebGLSupported] = useState(() => {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) {
-      setWebGLSupported(false);
-    }
-  }, []);
+    return Boolean(gl);
+  });
 
   useEffect(() => {
     if (!containerRef.current || !webGLSupported) return undefined;
@@ -70,6 +68,7 @@ const LightPillar = ({
 
     const settings = qualitySettings[effectiveQuality] || qualitySettings.medium;
 
+    let rendererFailureTimeout = null;
     let renderer;
     try {
       renderer = new THREE.WebGLRenderer({
@@ -81,7 +80,9 @@ const LightPillar = ({
         depth: false,
       });
     } catch {
-      setWebGLSupported(false);
+      rendererFailureTimeout = window.setTimeout(() => {
+        setWebGLSupported(false);
+      }, 0);
       return undefined;
     }
 
@@ -238,26 +239,46 @@ const LightPillar = ({
       mouseRef.current.set(x, y);
     };
 
+    const markInteraction = () => {
+      interactionUntilRef.current = performance.now() + 220;
+    };
+
+    const handleVisibilityChange = () => {
+      visibilityRef.current = document.visibilityState !== "hidden";
+    };
+
     if (interactive) {
       container.addEventListener("mousemove", handleMouseMove, { passive: true });
     }
+    window.addEventListener("wheel", markInteraction, { passive: true });
+    window.addEventListener("touchmove", markInteraction, { passive: true });
+    window.addEventListener("keydown", markInteraction, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    handleVisibilityChange();
 
     let lastTime = performance.now();
-    const targetFPS = effectiveQuality === "low" ? 30 : 60;
-    const frameTime = 1000 / targetFPS;
+    const idleFPS = effectiveQuality === "high" ? 48 : effectiveQuality === "medium" ? 40 : 28;
+    const interactionFPS = 24;
 
     const animate = (currentTime) => {
       if (!materialRef.current || !rendererRef.current || !sceneRef.current || !cameraRef.current) return;
 
+      if (!visibilityRef.current) {
+        lastTime = currentTime;
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      const activeFrameTime = 1000 / (currentTime < interactionUntilRef.current ? interactionFPS : idleFPS);
       const deltaTime = currentTime - lastTime;
-      if (deltaTime >= frameTime) {
+      if (deltaTime >= activeFrameTime) {
         timeRef.current += 0.016 * rotationSpeed;
         const t = timeRef.current;
         materialRef.current.uniforms.uTime.value = t;
         materialRef.current.uniforms.uRotCos.value = Math.cos(t * 0.3);
         materialRef.current.uniforms.uRotSin.value = Math.sin(t * 0.3);
         rendererRef.current.render(sceneRef.current, cameraRef.current);
-        lastTime = currentTime - (deltaTime % frameTime);
+        lastTime = currentTime - (deltaTime % activeFrameTime);
       }
 
       rafRef.current = requestAnimationFrame(animate);
@@ -281,8 +302,15 @@ const LightPillar = ({
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("wheel", markInteraction);
+      window.removeEventListener("touchmove", markInteraction);
+      window.removeEventListener("keydown", markInteraction);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (interactive) container.removeEventListener("mousemove", handleMouseMove);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (mouseMoveTimeout) clearTimeout(mouseMoveTimeout);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      if (rendererFailureTimeout) clearTimeout(rendererFailureTimeout);
       if (rendererRef.current) {
         rendererRef.current.dispose();
         rendererRef.current.forceContextLoss();

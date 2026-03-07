@@ -7,12 +7,19 @@ import {
   isUserApproved,
   normalizeApprovalStatus,
 } from '../../server/accessControl.js';
+import { verifyGoogleIdToken } from '../../server/googleAuth.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from '../../server/rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from '../../server/tokenAuth.js';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function authSecret() {
   return process.env.APP_AUTH_SECRET || 'change-this-secret';
+}
+
+function createError(message, status = 500) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
 }
 
 function tokenFromReq(req) {
@@ -63,6 +70,26 @@ function createId(prefix) {
   return `${prefix}-${now.toString(36)}${random}`;
 }
 
+function normalizeAuthProviders(input) {
+  const values = Array.isArray(input) ? input : [];
+  return [...new Set(values.map((value) => String(value || '').trim().toLowerCase()).filter(Boolean))];
+}
+
+function issueUserSession(user) {
+  const token = issueToken(
+    {
+      sub: user.id,
+      role: user.role,
+      email: user.email,
+      clientId: user.clientId,
+    },
+    authSecret(),
+    60 * 60 * 24
+  );
+
+  return { token, user: userView(user) };
+}
+
 function toClientIdSeed(value) {
   return String(value || '')
     .trim()
@@ -86,18 +113,7 @@ export async function loginWithPassword(email, password) {
   const user = authenticateUser(config, email, password);
   if (!user) return null;
 
-  const token = issueToken(
-    {
-      sub: user.id,
-      role: user.role,
-      email: user.email,
-      clientId: user.clientId,
-    },
-    authSecret(),
-    60 * 60 * 24
-  );
-
-  return { token, user: userView(user) };
+  return issueUserSession(user);
 }
 
 export async function signupClientUser({ email, password, clientName }) {
@@ -153,18 +169,120 @@ export async function signupClientUser({ email, password, clientName }) {
     throw error;
   }
 
-  const token = issueToken(
-    {
-      sub: createdUser.id,
-      role: createdUser.role,
-      email: createdUser.email,
-      clientId: createdUser.clientId,
-    },
-    authSecret(),
-    60 * 60 * 24
-  );
+  return issueUserSession(createdUser);
+}
 
-  return { token, user: userView(createdUser) };
+function findUserByGoogleSub(config, googleSub) {
+  const target = String(googleSub || '').trim();
+  if (!target) return null;
+  return (config?.users || []).find((user) => String(user.googleSub || '').trim() === target) || null;
+}
+
+function applyGoogleProfileToUser(user, googleProfile) {
+  return {
+    ...user,
+    email: googleProfile.email || user.email,
+    googleSub: googleProfile.sub,
+    authProviders: normalizeAuthProviders([...(user.authProviders || []), 'google']),
+  };
+}
+
+async function persistGoogleLink(config, user, googleProfile) {
+  const users = [...(config.users || [])];
+  const userIndex = users.findIndex((entry) => String(entry.id) === String(user.id));
+  if (userIndex < 0) {
+    throw createError('User account not found', 404);
+  }
+
+  const nextUser = applyGoogleProfileToUser(users[userIndex], googleProfile);
+  users[userIndex] = nextUser;
+  const saved = await writeRbacConfig({ ...config, users });
+  const savedUser = findUserById(saved, nextUser.id);
+  if (!savedUser) {
+    throw createError('Failed to link Google account', 500);
+  }
+  return savedUser;
+}
+
+function buildGoogleSignupProfile(googleProfile, clientName) {
+  return {
+    ...emptyOnboardingProfile(),
+    clientName: clientName || googleProfile.name || '',
+    primaryEmail: googleProfile.email,
+    profileImage: googleProfile.picture || '',
+  };
+}
+
+export async function loginWithGoogle(credential) {
+  const googleProfile = await verifyGoogleIdToken(credential);
+  const config = await readRbacConfig();
+  const userByGoogleSub = findUserByGoogleSub(config, googleProfile.sub);
+  const userByEmail = findUserByEmail(config, googleProfile.email);
+
+  if (userByGoogleSub && userByEmail && String(userByGoogleSub.id) !== String(userByEmail.id)) {
+    throw createError('This Google account is already linked to another user', 409);
+  }
+
+  let resolvedUser = userByGoogleSub || userByEmail;
+  if (!resolvedUser) {
+    throw createError('No account found for this Google account. Use Sign Up with Google first.', 404);
+  }
+
+  if (resolvedUser.googleSub && String(resolvedUser.googleSub) !== googleProfile.sub) {
+    throw createError('This email is already linked to a different Google account', 409);
+  }
+
+  const shouldPersistLink = String(resolvedUser.googleSub || '') !== googleProfile.sub
+    || String(resolvedUser.email || '').trim().toLowerCase() !== googleProfile.email
+    || !normalizeAuthProviders(resolvedUser.authProviders).includes('google');
+
+  if (shouldPersistLink) {
+    resolvedUser = await persistGoogleLink(config, resolvedUser, googleProfile);
+  }
+
+  return issueUserSession(resolvedUser);
+}
+
+export async function signupClientUserWithGoogle({ credential, clientName }) {
+  const googleProfile = await verifyGoogleIdToken(credential);
+  const normalizedClientName = String(clientName || '').trim();
+  const config = await readRbacConfig();
+  const existingUser = findUserByGoogleSub(config, googleProfile.sub) || findUserByEmail(config, googleProfile.email);
+  if (existingUser) {
+    throw createError('Email is already registered. Use Sign In with Google instead.', 409);
+  }
+
+  const localPart = googleProfile.email.split('@')[0] || '';
+  const nextClientName = normalizedClientName || googleProfile.name || localPart || 'New Client';
+  const existingClientIds = new Set((config.clients || []).map((client) => String(client.id)));
+  const nextClient = {
+    id: nextClientId(nextClientName || localPart, existingClientIds),
+    name: nextClientName,
+    workflowIds: [],
+    onboardingProfile: buildGoogleSignupProfile(googleProfile, nextClientName),
+    onboardingSubmittedAt: null,
+  };
+  const nextUser = {
+    id: createId('user'),
+    email: googleProfile.email,
+    role: 'client',
+    clientId: nextClient.id,
+    approvalStatus: 'pending',
+    googleSub: googleProfile.sub,
+    authProviders: ['google'],
+  };
+
+  const saved = await writeRbacConfig({
+    users: [...(config.users || []), nextUser],
+    clients: [...(config.clients || []), nextClient],
+  });
+
+  const createdUser = findUserById(saved, nextUser.id);
+  if (!createdUser) {
+    throw createError('Failed to create signup account', 500);
+  }
+
+  return issueUserSession(createdUser);
 }
 
 export async function requireUser(req) {

@@ -44,7 +44,9 @@ export const SettingsProvider = ({ children }) => {
     // Live n8n is now enforced as the default/active source.
     const [dataSource, setDataSourceState] = useState(LIVE_DATASOURCE);
     const [clientProfile, setClientProfileState] = useState(readProfileFromStorage);
-    const [theme, setThemeState] = useState(() => 'light');
+    const [theme, setThemeState] = useState(() => {
+        try { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
+    });
     const { user, apiFetch, isLoading: isAuthLoading } = useAuth();
     const lastFetchedUserId = useRef(null);
     const [isProfileReady, setIsProfileReady] = useState(false);
