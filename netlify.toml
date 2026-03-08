@@ -3,19 +3,23 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# Small environment variables only (4KB Lambda limit)
-# Large vars (GOOGLE_SERVICE_ACCOUNT_JSON) must be set in Netlify UI
+# Reference environment variables from Netlify UI
+# These must be set in: Site settings → Build & deploy → Environment
 [build.environment]
-  APP_AUTH_SECRET = ""
-  GMAIL_APP_PASSWORD = ""
-  GMAIL_USER = ""
-  GOOGLE_CLIENT_ID = ""
-  N8N_API_BASE_PATH = ""
-  N8N_API_TOKEN = ""
-  N8N_AUTH_TYPE = ""
-  N8N_BASE_URL = ""
-  PORT = ""
-  VITE_GOOGLE_CLIENT_ID = ""
+  APP_AUTH_SECRET = "$APP_AUTH_SECRET"
+  GMAIL_APP_PASSWORD = "$GMAIL_APP_PASSWORD"
+  GMAIL_USER = "$GMAIL_USER"
+  GOOGLE_CLIENT_ID = "$GOOGLE_CLIENT_ID"
+  N8N_API_BASE_PATH = "$N8N_API_BASE_PATH"
+  N8N_API_TOKEN = "$N8N_API_TOKEN"
+  N8N_AUTH_TYPE = "$N8N_AUTH_TYPE"
+  N8N_BASE_URL = "$N8N_BASE_URL"
+  PORT = "$PORT"
+  VITE_GOOGLE_CLIENT_ID = "$VITE_GOOGLE_CLIENT_ID"
+
+# Large vars also set in Netlify UI (bypass 4KB Lambda limit):
+# - GOOGLE_SERVICE_ACCOUNT_JSON
+# - GOOGLE_SHEETS_SPREADSHEET_ID
 
 [functions]
   node_bundler = "esbuild"
