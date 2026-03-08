@@ -2,6 +2,20 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
+  # Small environment variables only (4KB Lambda limit)
+  # Large vars (GOOGLE_SERVICE_ACCOUNT_JSON) must be set in Netlify UI
+  environment = [
+    "APP_AUTH_SECRET",
+    "GMAIL_APP_PASSWORD",
+    "GMAIL_USER",
+    "GOOGLE_CLIENT_ID",
+    "N8N_API_BASE_PATH",
+    "N8N_API_TOKEN",
+    "N8N_AUTH_TYPE",
+    "N8N_BASE_URL",
+    "PORT",
+    "VITE_GOOGLE_CLIENT_ID"
+  ]
 
 [functions]
   node_bundler = "esbuild"
