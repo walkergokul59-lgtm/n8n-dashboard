@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import {
   applyWorkflowSelection,
   authenticateUser,
@@ -30,9 +31,40 @@ import { buildOverview, checkHealth, countExecutionsInRange, listRecentExecution
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from './rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from './tokenAuth.js';
 import { getQueryParam, readJsonBody, sendJson } from './httpUtils.js';
+import { createAuditLog, isGoogleSheetsConfigured } from './googleSheetsStore.js';
 
 const AUTH_SECRET = () => process.env.APP_AUTH_SECRET || 'change-this-secret';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ── Rate Limiting ──────────────────────────────────────────────────────────────
+
+const rateLimitStore = new Map();
+
+function rateLimit(key, maxAttempts, windowMs) {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now - entry.start > windowMs) {
+    rateLimitStore.set(key, { start: now, count: 1 });
+    return false;
+  }
+  entry.count += 1;
+  if (entry.count > maxAttempts) return true;
+  return false;
+}
+
+function getClientIp(req) {
+  return req.headers?.['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.socket?.remoteAddress
+    || 'unknown';
+}
+
+// Clean up rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    if (now - entry.start > 120_000) rateLimitStore.delete(key);
+  }
+}, 300_000).unref?.();
 
 function emptyOnboardingProfile() {
   return {
@@ -136,12 +168,31 @@ export function createApiRouter(n8n) {
       }
 
       if (pathname === '/api/auth/login' && method === 'POST') {
+        const clientIp = getClientIp(req);
+        if (rateLimit(`login:${clientIp}`, 5, 60_000)) {
+          sendJson(res, 429, { error: 'Too many login attempts. Please try again later.' });
+          return true;
+        }
+
         const body = await readJsonBody(req);
         const config = await readRbacConfig();
-        const user = authenticateUser(config, body.email, body.password);
+        const user = await authenticateUser(config, body.email, body.password);
         if (!user) {
           sendJson(res, 401, { error: 'Invalid email or password' });
           return true;
+        }
+
+        // Rehash legacy plaintext password to bcrypt
+        if (user._needsRehash) {
+          const hashed = bcrypt.hashSync(String(body.password), 10);
+          const users = (config.users || []).map((u) =>
+            String(u.id) === String(user.id) ? { ...u, password: hashed } : u
+          );
+          writeRbacConfig({ ...config, users }).catch(() => {});
+        }
+
+        if (isGoogleSheetsConfigured()) {
+          createAuditLog({ userId: user.id, action: 'login', meta: { email: user.email } });
         }
 
         const token = issueToken(
@@ -159,6 +210,12 @@ export function createApiRouter(n8n) {
       }
 
       if (pathname === '/api/auth/signup' && method === 'POST') {
+        const clientIp = getClientIp(req);
+        if (rateLimit(`signup:${clientIp}`, 3, 60_000)) {
+          sendJson(res, 429, { error: 'Too many signup attempts. Please try again later.' });
+          return true;
+        }
+
         const body = await readJsonBody(req);
         const email = String(body?.email || '').trim().toLowerCase();
         const password = String(body?.password || '');
@@ -188,10 +245,11 @@ export function createApiRouter(n8n) {
           onboardingProfile: emptyOnboardingProfile(),
           onboardingSubmittedAt: null,
         };
+        const hashedPassword = bcrypt.hashSync(password, 10);
         const nextUser = {
           id: createId('user'),
           email,
-          password,
+          password: hashedPassword,
           role: 'client',
           clientId: nextClient.id,
           approvalStatus: 'pending',
@@ -206,6 +264,10 @@ export function createApiRouter(n8n) {
         if (!createdUser) {
           sendJson(res, 500, { error: 'Failed to create signup account' });
           return true;
+        }
+
+        if (isGoogleSheetsConfigured()) {
+          createAuditLog({ userId: createdUser.id, action: 'signup', meta: { email } });
         }
 
         const token = issueToken(
@@ -251,6 +313,11 @@ export function createApiRouter(n8n) {
       if (pathname === '/api/auth/reset-request' && method === 'POST') {
         const body = await readJsonBody(req);
         const email = String(body?.email || '').trim().toLowerCase();
+
+        if (rateLimit(`reset:${email}`, 3, 60_000)) {
+          sendJson(res, 200, { message: 'If an account with that email exists, a reset code has been sent.' });
+          return true;
+        }
 
         if (!EMAIL_PATTERN.test(email)) {
           sendJson(res, 400, { error: 'Enter a valid email address' });
@@ -342,10 +409,15 @@ export function createApiRouter(n8n) {
           return true;
         }
 
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
         const users = (config.users || []).map((u) =>
-          String(u.id) === String(user.id) ? { ...u, password: newPassword } : u
+          String(u.id) === String(user.id) ? { ...u, password: hashedPassword } : u
         );
         await writeRbacConfig({ ...config, users });
+
+        if (isGoogleSheetsConfigured()) {
+          createAuditLog({ userId: user.id, action: 'password_reset', meta: { email: tokenData.email } });
+        }
 
         sendJson(res, 200, { message: 'Password has been reset successfully.' });
         return true;

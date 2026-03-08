@@ -2,10 +2,17 @@ import crypto from 'node:crypto';
 import { issueToken, verifyToken } from '../../server/tokenAuth.js';
 import { readRbacConfig } from '../../server/rbacStore.js';
 import { findUserByEmail } from '../../server/accessControl.js';
+import {
+  isGoogleSheetsConfigured,
+  createPasswordReset,
+  findPasswordReset,
+  markPasswordResetUsed,
+  incrementResetAttempts,
+} from '../../server/googleSheetsStore.js';
 
 const AUTH_SECRET = () => process.env.APP_AUTH_SECRET || 'change-this-secret';
 
-// In-memory fallback when KV is not configured
+// In-memory fallback when neither KV nor Google Sheets is configured
 const memoryStore = new Map();
 
 function getKvConfig() {
@@ -49,6 +56,18 @@ function resetKey(email) {
 }
 
 export async function storeResetCode(email, code) {
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured()) {
+    await createPasswordReset({
+      email: email.trim().toLowerCase(),
+      code,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    });
+    return;
+  }
+
+  // Priority 2: Vercel KV
   const key = resetKey(email);
   const value = { code, attempts: 0, createdAt: Date.now() };
 
@@ -56,8 +75,8 @@ export async function storeResetCode(email, code) {
   if (kv) {
     await runKvCommand(['SET', key, JSON.stringify(value), 'EX', 600]);
   } else {
+    // Priority 3: In-memory
     memoryStore.set(key, value);
-    // Auto-expire after 10 minutes
     setTimeout(() => {
       if (memoryStore.get(key) === value) memoryStore.delete(key);
     }, 600_000);
@@ -65,8 +84,20 @@ export async function storeResetCode(email, code) {
 }
 
 export async function getResetCode(email) {
-  const key = resetKey(email);
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured()) {
+    const row = await findPasswordReset(email);
+    if (!row) return null;
+    return {
+      code: row.code || '',
+      attempts: parseInt(row.attempts, 10) || 0,
+      createdAt: new Date(row.created_at || row.createdAt || 0).getTime(),
+      _sheetRow: row,
+    };
+  }
 
+  // Priority 2: Vercel KV
+  const key = resetKey(email);
   const kv = getKvConfig();
   if (kv) {
     const { result } = await runKvCommand(['GET', key]);
@@ -74,9 +105,9 @@ export async function getResetCode(email) {
     return JSON.parse(result);
   }
 
+  // Priority 3: In-memory
   const entry = memoryStore.get(key);
   if (!entry) return null;
-  // Check manual expiry for memory store
   if (Date.now() - entry.createdAt > 600_000) {
     memoryStore.delete(key);
     return null;
@@ -85,12 +116,19 @@ export async function getResetCode(email) {
 }
 
 export async function incrementAttempts(email, data) {
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured() && data?._sheetRow) {
+    await incrementResetAttempts(data._sheetRow);
+    return;
+  }
+
+  // Priority 2: KV / Memory
   const key = resetKey(email);
   const updated = { ...data, attempts: (data.attempts || 0) + 1 };
+  delete updated._sheetRow;
 
   const kv = getKvConfig();
   if (kv) {
-    // Preserve remaining TTL by using KEEPTTL
     await runKvCommand(['SET', key, JSON.stringify(updated), 'KEEPTTL']);
   } else {
     memoryStore.set(key, updated);
@@ -98,8 +136,15 @@ export async function incrementAttempts(email, data) {
 }
 
 export async function deleteResetCode(email) {
-  const key = resetKey(email);
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured()) {
+    const row = await findPasswordReset(email);
+    if (row) await markPasswordResetUsed(row);
+    return;
+  }
 
+  // Priority 2: KV / Memory
+  const key = resetKey(email);
   const kv = getKvConfig();
   if (kv) {
     await runKvCommand(['DEL', key]);

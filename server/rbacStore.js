@@ -1,6 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import bcrypt from 'bcryptjs';
 import { normalizeApprovalStatus } from './accessControl.js';
+import {
+  isGoogleSheetsConfigured,
+  readRbacConfig as sheetsReadRbac,
+  writeRbacConfig as sheetsWriteRbac,
+} from './googleSheetsStore.js';
 
 function emptyOnboardingProfile() {
   return {
@@ -28,12 +34,18 @@ function normalizeOnboardingProfile(input) {
   };
 }
 
+function hashPasswordSync(plain) {
+  if (!plain) return '';
+  if (plain.startsWith('$2')) return plain; // already hashed
+  return bcrypt.hashSync(plain, 10);
+}
+
 const DEFAULT_RBAC = {
   users: [
     {
       id: 'user-admin',
       email: 'root@gmail.com',
-      password: 'root',
+      password: hashPasswordSync('root'),
       role: 'admin',
       clientId: 'admin',
       approvalStatus: 'approved',
@@ -41,7 +53,7 @@ const DEFAULT_RBAC = {
     {
       id: 'user-client1',
       email: 'client1@gmail.com',
-      password: 'client1',
+      password: hashPasswordSync('client1'),
       role: 'client',
       clientId: 'client1',
       approvalStatus: 'approved',
@@ -128,6 +140,8 @@ export function normalizeRbacConfig(raw) {
     role: String(user?.role || 'client'),
     clientId: String(user?.clientId || ''),
     approvalStatus: normalizeApprovalStatus(user?.approvalStatus, 'approved'),
+    googleSub: user?.googleSub || '',
+    authProviders: user?.authProviders || [],
   })).filter((user) => user.email);
 
   const clients = ensureArray(input.clients).map((client, index) => ({
@@ -143,7 +157,7 @@ export function normalizeRbacConfig(raw) {
     users.unshift({
       id: 'user-admin',
       email: 'root@gmail.com',
-      password: 'root',
+      password: hashPasswordSync('root'),
       role: 'admin',
       clientId: 'admin',
       approvalStatus: 'approved',
@@ -155,7 +169,7 @@ export function normalizeRbacConfig(raw) {
     users.push({
       id: 'user-client1',
       email: 'client1@gmail.com',
-      password: 'client1',
+      password: hashPasswordSync('client1'),
       role: 'client',
       clientId: 'client1',
       approvalStatus: 'approved',
@@ -193,6 +207,20 @@ async function writeToDisk(filePath, state) {
 }
 
 export async function readRbacConfig() {
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured()) {
+    try {
+      const loaded = await sheetsReadRbac();
+      const normalized = normalizeRbacConfig(loaded);
+      globalThis[memoryStateKey] = normalized;
+      globalThis[kvStateKey] = 'google-sheets';
+      return normalized;
+    } catch (err) {
+      console.error('[RBAC] Google Sheets read failed, falling back:', err?.message);
+    }
+  }
+
+  // Priority 2: Vercel KV
   const kv = getKvConfig();
   if (kv) {
     try {
@@ -209,6 +237,7 @@ export async function readRbacConfig() {
     return normalizeRbacConfig(globalThis[memoryStateKey]);
   }
 
+  // Priority 3: Disk
   const filePath = getRbacPath();
   try {
     const loaded = await readFromDisk(filePath);
@@ -231,6 +260,18 @@ export async function writeRbacConfig(nextConfig) {
   const normalized = normalizeRbacConfig(nextConfig);
   globalThis[memoryStateKey] = normalized;
 
+  // Priority 1: Google Sheets
+  if (isGoogleSheetsConfigured()) {
+    try {
+      const result = await sheetsWriteRbac(normalized);
+      globalThis[kvStateKey] = 'google-sheets';
+      return normalizeRbacConfig(result);
+    } catch (err) {
+      console.error('[RBAC] Google Sheets write failed, falling back:', err?.message);
+    }
+  }
+
+  // Priority 2: Vercel KV
   try {
     const persistedInKv = await writeToKv(normalized);
     if (persistedInKv) {
@@ -241,12 +282,12 @@ export async function writeRbacConfig(nextConfig) {
     // Continue to disk fallback.
   }
 
+  // Priority 3: Disk
   const filePath = getRbacPath();
   try {
     await writeToDisk(filePath, normalized);
     globalThis[kvStateKey] = 'disk';
   } catch {
-    // Vercel serverless filesystem is read-only; memory fallback remains active.
     globalThis[kvStateKey] = 'memory';
   }
 

@@ -26,13 +26,31 @@ npm run preview  # Serve production build locally (requires npm run build first)
 
 ### Local Development (`.env`)
 
-Create `.env` in the root with n8n connection details:
+Create `.env` in the root with n8n connection details and authentication settings:
 ```
+# Google Sheets Database (optional — falls back to disk/memory without this)
+GOOGLE_SERVICE_ACCOUNT_JSON=<base64-encoded service account JSON>
+GOOGLE_SHEETS_SPREADSHEET_ID=<spreadsheet ID from URL>
+
+# n8n connection
 N8N_BASE_URL=http://localhost:5678        # Your local n8n instance URL
 N8N_API_TOKEN=<your-n8n-api-token>        # n8n API token (from Settings → API)
 N8N_API_BASE_PATH=/api/v1                 # Usually /api/v1
 N8N_AUTH_TYPE=bearer                      # How n8n authenticates (bearer or header)
 N8N_AUTH_HEADER=X-N8N-API-KEY             # Optional: custom auth header (if not bearer)
+
+# Dashboard authentication
+APP_AUTH_SECRET=<long-random-string>      # JWT secret for session tokens (required)
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=<your-google-client-id>  # OAuth client ID from Google Console
+VITE_GOOGLE_CLIENT_ID=<same-as-above>     # Browser-side client ID (must match)
+
+# Gmail SMTP (optional — for password reset & support ticket emails)
+GMAIL_USER=your-email@gmail.com           # Gmail address
+GMAIL_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx    # Gmail App Password (requires 2FA)
+
+# Server settings
 PORT=5173                                  # Optional: server port (default 5173)
 ```
 
@@ -42,15 +60,36 @@ In local dev, the Node server reads `.env` via `server/env.js` and uses it to pr
 
 For Vercel deployment, set these in the Vercel dashboard (not in `.env`):
 ```
+# Google Sheets Database
+GOOGLE_SERVICE_ACCOUNT_JSON=<base64-encoded service account JSON>
+GOOGLE_SHEETS_SPREADSHEET_ID=<spreadsheet ID from URL>
+
+# n8n connection
 N8N_BASE_URL=https://n8n.yourdomain.com   # Production n8n URL
 N8N_API_TOKEN=<your-n8n-api-token>        # n8n API token
 N8N_API_BASE_PATH=/api/v1                 # Usually /api/v1
 N8N_AUTH_TYPE=bearer                      # Auth method
+
+# Dashboard authentication
+APP_AUTH_SECRET=<long-random-string>      # JWT secret for session tokens (required)
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=<your-google-client-id>  # OAuth client ID from Google Console
+VITE_GOOGLE_CLIENT_ID=<same-as-above>     # Browser-side client ID (must match)
+
+# Gmail SMTP (for password reset & support ticket emails)
+GMAIL_USER=your-email@gmail.com           # Gmail address
+GMAIL_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx    # Gmail App Password
+
+# RBAC persistence (optional fallback when Google Sheets not configured)
 KV_REST_API_URL=<vercel-kv-url>          # (optional) Vercel KV for persistent RBAC
 KV_REST_API_TOKEN=<vercel-kv-token>      # (optional) Vercel KV token
 RBAC_KV_KEY=n8n:rbac                      # (optional) KV key prefix (default: n8n:rbac)
+
+# Support chat
 SUPPORT_KV_KEY=n8n:support                # (optional) KV key for support tickets (default: n8n:support)
 SUPPORT_CONFIG_PATH=data/support.json     # (optional) File path for support data (default: data/support.json)
+APP_BASE_URL=https://yourdomain.com       # (optional) Base URL for support ticket email links
 ```
 
 **Important**: `.env` is local-only; Vercel functions use their own env vars. See README for more details.
@@ -174,6 +213,36 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 
 **Vercel Persistence**: By default, RBAC is in-memory and resets on cold start. To persist admin changes (user/client mappings), wire `rbacStore.js` to Vercel KV (set `KV_REST_API_URL`, `KV_REST_API_TOKEN`).
 
+### Authentication Methods
+
+The app supports three authentication flows:
+
+**1. Email/Password Login** (`api/auth/login.js`, `server/apiRouter.js`)
+- Direct login with email and password
+- Test users (in-memory, reset on server restart):
+  - Admin: `root@gmail.com` / `root`
+  - Client: `client1@gmail.com` / `client1`
+- Tokens stored in localStorage as `n8nDashboardAuthToken`
+
+**2. Google OAuth** (`api/auth/google.js`, `server/googleAuth.js`)
+- Sign in or sign up using Google account
+- Requires `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` in environment
+- Frontend uses `GoogleAuthButton` component (GoogleAuthButton.jsx)
+- Existing users with matching email can use Google OAuth
+- New signup users require admin approval before dashboard access
+- JWT token verification via `verifyGoogleIdToken()` in `server/googleAuth.js`
+
+**3. Password Reset** (`api/auth/reset-request.js`, `api/auth/reset-verify.js`, `api/auth/reset-password.js`)
+- User requests reset via email (sends reset code)
+- System generates time-limited reset code (6-digit, 10-minute expiry)
+- User verifies code and sets new password
+- Emails sent via Gmail SMTP (Nodemailer) — requires `GMAIL_USER` and `GMAIL_APP_PASSWORD`
+- In dev without Gmail credentials, reset codes are logged to console for testing
+- Reset codes stored in Google Sheets "password_resets" tab (or KV/memory fallback)
+- Uses `api/_lib/resetCodes.js` for code generation and validation
+
+**Password Security**: All passwords are hashed with bcrypt (cost factor 10). Legacy plaintext passwords are automatically migrated to bcrypt on first successful login.
+
 ### Support Chat
 
 The app includes a **support ticket system** for client-support agent communication.
@@ -200,12 +269,13 @@ The app includes a **support ticket system** for client-support agent communicat
 
 - **index.js**: HTTP server, Vite middleware integration, static file serving
 - **n8nClient.js**: n8n API client (auth, request building, error handling)
-- **apiRouter.js**: Request routing to dashboard/auth/admin endpoints
+- **apiRouter.js**: Request routing to dashboard/auth/admin endpoints; includes rate limiting
 - **dashboardCore.js**: Business logic (workflow queries, execution logs, health checks)
 - **env.js**: Environment variable loader
-- **accessControl.js**: RBAC utility functions (user lookup, permission checks)
+- **accessControl.js**: RBAC utility functions (user lookup, bcrypt password verification)
 - **tokenAuth.js**: JWT token validation middleware
-- **rbacStore.js**: User/client/workflow mapping storage (in-memory or KV)
+- **rbacStore.js**: User/client/workflow mapping storage (Google Sheets → KV → disk → memory)
+- **googleSheetsStore.js**: Google Sheets service layer (user/client CRUD, password resets, audit logs)
 - **supportStore.js**: Support ticket persistence (in-memory, KV, or file-based storage — similar to RBAC pattern)
 - **httpUtils.js**: HTTP response helpers
 
@@ -213,25 +283,39 @@ The app includes a **support ticket system** for client-support agent communicat
 
 Production deployment uses Vercel serverless functions instead of Node server:
 
-- **`api/auth/login.js`** — User authentication endpoint
-- **`api/auth/signup.js`** — Client user signup endpoint
+**Authentication endpoints**:
+- **`api/auth/login.js`** — Email/password login
+- **`api/auth/signup.js`** — Client user signup
+- **`api/auth/google.js`** — Google OAuth sign-in/sign-up
 - **`api/auth/me.js`** — Current user info endpoint
-- **`api/client/settings.js`** — Client-specific settings (GET/PUT)
+- **`api/auth/reset-request.js`** — Request password reset (sends email)
+- **`api/auth/reset-verify.js`** — Verify reset code
+- **`api/auth/reset-password.js`** — Update password with reset code
+
+**Dashboard endpoints**:
 - **`api/dashboard/workflows.js`** — Fetch workflows (respects RBAC)
 - **`api/dashboard/overview.js`** — Dashboard KPIs (respects RBAC)
 - **`api/dashboard/recent-executions.js`** — Execution history (respects RBAC)
 - **`api/dashboard/executions-count.js`** — Execution count metrics
 - **`api/dashboard/health.js`** — System health check
-- **`api/dashboard/stream.js`** — Real-time execution updates
-- **`api/admin/rbac.js`** — Admin panel: user/client/workflow management
-- **`api/support/list.js`** — List support tickets (client-scoped)
-- **`api/support/create.js`** — Create new support ticket
-- **`api/support/thread.js`** — Get/update support ticket thread
-- **`api/_lib/auth.js`** — Shared auth logic (JWT, RBAC)
-- **`api/_lib/support.js`** — Shared support utilities
+- **`api/dashboard/stream.js`** — Real-time execution updates via SSE
 - **`api/dashboard/_client.js`** — Shared n8n client utilities
 
-These functions handle the same logic as `server/` but in serverless context. They require Vercel environment variables (set in Vercel dashboard): `N8N_BASE_URL`, `N8N_API_TOKEN`, `N8N_API_BASE_PATH`, etc.
+**Admin & Support endpoints**:
+- **`api/admin/rbac.js`** — Admin panel: user/client/workflow management
+- **`api/support/index.js`** — List/create support tickets
+- **`api/support/[ticketId].js`** — Get support ticket
+- **`api/support/[ticketId]/messages.js`** — Get/post ticket messages
+- **`api/support/[ticketId]/close.js`** — Close support ticket
+- **`api/client/settings.js`** — Client-specific settings (GET/PUT)
+
+**Shared utilities**:
+- **`api/_lib/auth.js`** — Shared auth logic (JWT, RBAC, user lookup)
+- **`api/_lib/support.js`** — Shared support utilities
+- **`api/_lib/email.js`** — Email sending via Gmail SMTP (Nodemailer)
+- **`api/_lib/resetCodes.js`** — Password reset code generation and validation
+
+These functions handle the same logic as `server/` but in serverless context. They require Vercel environment variables (set in Vercel dashboard): `N8N_BASE_URL`, `N8N_API_TOKEN`, `N8N_API_BASE_PATH`, `APP_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, etc.
 
 ## Development Workflow
 

@@ -1,21 +1,23 @@
-let resendClient = null;
+import nodemailer from 'nodemailer';
 
-async function getResendClient() {
-  if (resendClient) return resendClient;
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) return null;
+let transporter = null;
 
-  try {
-    const { Resend } = await import('resend');
-    resendClient = new Resend(apiKey);
-    return resendClient;
-  } catch {
-    return null;
-  }
+function getTransporter() {
+  if (transporter) return transporter;
+
+  const user = process.env.GMAIL_USER?.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD?.trim();
+  if (!user || !pass) return null;
+
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+  return transporter;
 }
 
 function getFromEmail() {
-  return process.env.RESEND_FROM_EMAIL?.trim() || 'noreply@example.com';
+  return process.env.GMAIL_USER?.trim() || 'noreply@example.com';
 }
 
 function escapeHtml(value) {
@@ -33,25 +35,20 @@ function summarizeText(value, maxLength = 280) {
   return `${normalized.slice(0, Math.max(0, maxLength - 1))}...`;
 }
 
-function normalizeEmailError(error, fallbackMessage) {
-  const message = error?.message || error?.name || fallbackMessage;
-  return new Error(String(message || fallbackMessage));
-}
-
 export async function sendResetCodeEmail(toEmail, code) {
-  const client = await getResendClient();
+  const transport = getTransporter();
 
-  if (!client) {
+  if (!transport) {
     console.log(`[Password Reset] Code for ${toEmail}: ${code}`);
-    console.log('[Password Reset] Set RESEND_API_KEY to send emails in production.');
+    console.log('[Password Reset] Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails in production.');
     return {
       delivered: false,
       provider: 'console',
-      reason: 'RESEND_API_KEY is missing or the Resend client could not be loaded.',
+      reason: 'Gmail SMTP credentials are not configured.',
     };
   }
 
-  const result = await client.emails.send({
+  const result = await transport.sendMail({
     from: getFromEmail(),
     to: toEmail,
     subject: 'Your Password Reset Code',
@@ -71,19 +68,15 @@ export async function sendResetCodeEmail(toEmail, code) {
     `,
   });
 
-  if (result?.error) {
-    throw normalizeEmailError(result.error, 'Failed to send password reset email.');
-  }
-
   return {
     delivered: true,
-    provider: 'resend',
-    id: String(result?.data?.id || ''),
+    provider: 'gmail',
+    id: String(result?.messageId || ''),
   };
 }
 
 export async function sendSupportTicketCreatedEmail({ toEmail, ticket, ticketUrl }) {
-  const client = await getResendClient();
+  const transport = getTransporter();
   const safeTicketUrl = String(ticketUrl || '').trim();
   const subject = escapeHtml(ticket?.subject || 'Support request');
   const clientName = escapeHtml(ticket?.clientName || 'Client');
@@ -91,18 +84,18 @@ export async function sendSupportTicketCreatedEmail({ toEmail, ticket, ticketUrl
   const ticketId = escapeHtml(ticket?.id || '');
   const messagePreview = escapeHtml(summarizeText(ticket?.messages?.[0]?.body || '', 600));
 
-  if (!client) {
+  if (!transport) {
     console.log(`[Support Ticket] New ticket ${ticket?.id || ''} from ${ticket?.clientEmail || ''}`);
     console.log(`[Support Ticket] Open: ${safeTicketUrl}`);
-    console.log('[Support Ticket] Set RESEND_API_KEY to send emails in production.');
+    console.log('[Support Ticket] Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails in production.');
     return {
       delivered: false,
       provider: 'console',
-      reason: 'RESEND_API_KEY is missing or the Resend client could not be loaded.',
+      reason: 'Gmail SMTP credentials are not configured.',
     };
   }
 
-  const result = await client.emails.send({
+  const result = await transport.sendMail({
     from: getFromEmail(),
     to: toEmail,
     subject: `New Support Ticket ${ticket?.id || ''} from ${ticket?.clientName || ticket?.clientEmail || 'Client'}`,
@@ -141,13 +134,9 @@ export async function sendSupportTicketCreatedEmail({ toEmail, ticket, ticketUrl
     `,
   });
 
-  if (result?.error) {
-    throw normalizeEmailError(result.error, 'Failed to send support ticket notification email.');
-  }
-
   return {
     delivered: true,
-    provider: 'resend',
-    id: String(result?.data?.id || ''),
+    provider: 'gmail',
+    id: String(result?.messageId || ''),
   };
 }

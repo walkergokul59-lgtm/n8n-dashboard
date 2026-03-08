@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 function workflowIdFromExecution(execution) {
   const candidate = execution?.workflowId ?? execution?.workflow?.id ?? null;
   return candidate === null || candidate === undefined ? null : String(candidate);
@@ -40,10 +42,23 @@ export function findUserById(config, userId) {
   return (config?.users || []).find((user) => String(user.id) === target) || null;
 }
 
-export function authenticateUser(config, email, password) {
+export async function authenticateUser(config, email, password) {
   const user = findUserByEmail(config, email);
   if (!user) return null;
-  if (String(user.password || '') !== String(password || '')) return null;
+
+  const stored = String(user.password || '');
+  const input = String(password || '');
+  if (!stored || !input) return null;
+
+  // bcrypt hash starts with $2
+  if (stored.startsWith('$2')) {
+    const match = await bcrypt.compare(input, stored);
+    return match ? user : null;
+  }
+
+  // Legacy plaintext migration: verify plaintext, then flag for re-hash
+  if (stored !== input) return null;
+  user._needsRehash = true;
   return user;
 }
 

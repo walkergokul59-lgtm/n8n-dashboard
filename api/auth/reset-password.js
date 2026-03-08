@@ -1,6 +1,8 @@
+import bcrypt from 'bcryptjs';
 import { verifyResetToken } from '../_lib/resetCodes.js';
 import { readRbacConfig, writeRbacConfig } from '../../server/rbacStore.js';
 import { findUserByEmail } from '../../server/accessControl.js';
+import { createAuditLog, isGoogleSheetsConfigured } from '../../server/googleSheetsStore.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -36,12 +38,17 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Update user password in the RBAC store
+    // Hash and update user password in the RBAC store
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
     const users = (config.users || []).map((u) =>
-      String(u.id) === String(user.id) ? { ...u, password: newPassword } : u
+      String(u.id) === String(user.id) ? { ...u, password: hashedPassword } : u
     );
 
     await writeRbacConfig({ ...config, users });
+
+    if (isGoogleSheetsConfigured()) {
+      createAuditLog({ userId: user.id, action: 'password_reset', meta: { email: tokenData.email } });
+    }
 
     res.status(200).json({ message: 'Password has been reset successfully.' });
   } catch (err) {

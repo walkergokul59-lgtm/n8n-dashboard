@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import {
   applyWorkflowSelection,
   authenticateUser,
@@ -10,6 +11,7 @@ import {
 import { verifyGoogleIdToken } from '../../server/googleAuth.js';
 import { readRbacConfig, sanitizeRbacConfigForAdmin, writeRbacConfig } from '../../server/rbacStore.js';
 import { extractBearerTokenFromHeaders, issueToken, verifyToken } from '../../server/tokenAuth.js';
+import { createAuditLog, isGoogleSheetsConfigured } from '../../server/googleSheetsStore.js';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function authSecret() {
@@ -110,8 +112,21 @@ function nextClientId(seedValue, existingIds) {
 
 export async function loginWithPassword(email, password) {
   const config = await readRbacConfig();
-  const user = authenticateUser(config, email, password);
+  const user = await authenticateUser(config, email, password);
   if (!user) return null;
+
+  // Rehash legacy plaintext password to bcrypt
+  if (user._needsRehash) {
+    const hashed = bcrypt.hashSync(String(password), 10);
+    const users = (config.users || []).map((u) =>
+      String(u.id) === String(user.id) ? { ...u, password: hashed } : u
+    );
+    writeRbacConfig({ ...config, users }).catch(() => {});
+  }
+
+  if (isGoogleSheetsConfigured()) {
+    createAuditLog({ userId: user.id, action: 'login', meta: { email: user.email } });
+  }
 
   return issueUserSession(user);
 }
@@ -148,10 +163,11 @@ export async function signupClientUser({ email, password, clientName }) {
     onboardingProfile: emptyOnboardingProfile(),
     onboardingSubmittedAt: null,
   };
+  const hashedPassword = bcrypt.hashSync(normalizedPassword, 10);
   const nextUser = {
     id: createId('user'),
     email: normalizedEmail,
-    password: normalizedPassword,
+    password: hashedPassword,
     role: 'client',
     clientId: nextClient.id,
     approvalStatus: 'pending',
@@ -167,6 +183,10 @@ export async function signupClientUser({ email, password, clientName }) {
     const error = new Error('Failed to create signup account');
     error.status = 500;
     throw error;
+  }
+
+  if (isGoogleSheetsConfigured()) {
+    createAuditLog({ userId: createdUser.id, action: 'signup', meta: { email: normalizedEmail } });
   }
 
   return issueUserSession(createdUser);
@@ -240,6 +260,10 @@ export async function loginWithGoogle(credential) {
     resolvedUser = await persistGoogleLink(config, resolvedUser, googleProfile);
   }
 
+  if (isGoogleSheetsConfigured()) {
+    createAuditLog({ userId: resolvedUser.id, action: 'google_login', meta: { email: resolvedUser.email } });
+  }
+
   return issueUserSession(resolvedUser);
 }
 
@@ -280,6 +304,10 @@ export async function signupClientUserWithGoogle({ credential, clientName }) {
   const createdUser = findUserById(saved, nextUser.id);
   if (!createdUser) {
     throw createError('Failed to create signup account', 500);
+  }
+
+  if (isGoogleSheetsConfigured()) {
+    createAuditLog({ userId: createdUser.id, action: 'google_signup', meta: { email: googleProfile.email } });
   }
 
   return issueUserSession(createdUser);
