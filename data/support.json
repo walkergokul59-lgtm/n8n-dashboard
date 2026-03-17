@@ -1,17 +1,71 @@
 {
   "tickets": [
     {
+      "id": "tck_mmilstz2i6qh",
+      "clientId": "client1",
+      "clientUserId": "user-client1",
+      "clientName": "Client 1",
+      "clientEmail": "client1@gmail.com",
+      "subject": "dark mode not working",
+      "status": "open",
+      "createdAt": "2026-03-09T03:10:29.822Z",
+      "updatedAt": "2026-03-09T03:10:29.822Z",
+      "closedAt": null,
+      "closedByUserId": null,
+      "messages": [
+        {
+          "id": "msg_mmilstz21w0f",
+          "authorUserId": "user-client1",
+          "authorRole": "client",
+          "authorLabel": "Client 1",
+          "body": "Can someone pls look into this issue",
+          "createdAt": "2026-03-09T03:10:29.822Z"
+        }
+      ]
+    },
+    {
+      "id": "tck_mmhhip3t82aw",
+      "clientId": "neeranjan-shankar-3103",
+      "clientUserId": "user-mmhhe24i7pmb",
+      "clientName": "Neeranjan Shankar 3103",
+      "clientEmail": "walkergokul59@gmail.com",
+      "subject": "The dark mode is not working",
+      "status": "closed",
+      "createdAt": "2026-03-08T08:22:52.313Z",
+      "updatedAt": "2026-03-09T03:10:05.176Z",
+      "closedAt": "2026-03-09T03:10:05.176Z",
+      "closedByUserId": "user-mmiloy6d1yn1",
+      "messages": [
+        {
+          "id": "msg_mmhhip3tkqtz",
+          "authorUserId": "user-mmhhe24i7pmb",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar 3103",
+          "body": "The dark mode is very laggy",
+          "createdAt": "2026-03-08T08:22:52.313Z"
+        },
+        {
+          "id": "msg_mmhhjktu4fxg",
+          "authorUserId": "user-mmhhe24i7pmb",
+          "authorRole": "client",
+          "authorLabel": "Neeranjan Shankar 3103",
+          "body": "oh",
+          "createdAt": "2026-03-08T08:23:33.426Z"
+        }
+      ]
+    },
+    {
       "id": "tck_mmee4afb541e",
       "clientId": "client1",
       "clientUserId": "user-client1",
       "clientName": "Neeranjan Shankar",
       "clientEmail": "client1@gmail.com",
       "subject": "Not working dark mode",
-      "status": "open",
+      "status": "closed",
       "createdAt": "2026-03-06T04:24:22.727Z",
-      "updatedAt": "2026-03-06T04:24:22.727Z",
-      "closedAt": null,
-      "closedByUserId": null,
+      "updatedAt": "2026-03-09T03:10:07.601Z",
+      "closedAt": "2026-03-09T03:10:07.601Z",
+      "closedByUserId": "user-mmiloy6d1yn1",
       "messages": [
         {
           "id": "msg_mmee4afb9d4l",

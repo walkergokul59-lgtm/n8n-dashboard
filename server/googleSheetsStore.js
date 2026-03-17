@@ -1,5 +1,33 @@
 import { google } from 'googleapis';
 
+const IST_TIME_ZONE = 'Asia/Kolkata';
+const IST_OFFSET_MINUTES = 5 * 60 + 30;
+const IST_OFFSET_SUFFIX = '+05:30';
+
+function pad(value, size = 2) {
+  return String(value).padStart(size, '0');
+}
+
+function toTimestampMs(value) {
+  const date = value instanceof Date ? value : new Date(value || '');
+  const timestamp = date.getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function formatTimestampForSheets(value, { fallbackToNow = false } = {}) {
+  if (value === undefined || value === null || value === '') {
+    return fallbackToNow ? formatTimestampForSheets(new Date()) : '';
+  }
+
+  const timestamp = toTimestampMs(value);
+  if (timestamp === null) {
+    return fallbackToNow ? formatTimestampForSheets(new Date()) : String(value);
+  }
+
+  const shifted = new Date(timestamp + IST_OFFSET_MINUTES * 60_000);
+  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}T${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(shifted.getUTCSeconds())}.${pad(shifted.getUTCMilliseconds(), 3)}${IST_OFFSET_SUFFIX}`;
+}
+
 // ── Configuration ──────────────────────────────────────────────────────────────
 
 function getServiceAccountCredentials() {
@@ -24,6 +52,7 @@ function getSpreadsheetId() {
 // ── Sheets Client (singleton) ──────────────────────────────────────────────────
 
 let sheetsClient = null;
+let spreadsheetTimezonePromise = null;
 
 async function getSheetsClient() {
   if (sheetsClient) return sheetsClient;
@@ -38,6 +67,35 @@ async function getSheetsClient() {
 
   sheetsClient = google.sheets({ version: 'v4', auth });
   return sheetsClient;
+}
+
+async function ensureSpreadsheetTimezone() {
+  if (spreadsheetTimezonePromise) return spreadsheetTimezonePromise;
+
+  spreadsheetTimezonePromise = (async () => {
+    const sheets = await getSheetsClient();
+    const spreadsheetId = getSpreadsheetId();
+    if (!spreadsheetId) return;
+
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            updateSpreadsheetProperties: {
+              properties: { timeZone: IST_TIME_ZONE },
+              fields: 'timeZone',
+            },
+          },
+        ],
+      },
+    });
+  })().catch((err) => {
+    spreadsheetTimezonePromise = null;
+    console.error('[Google Sheets] Failed to set spreadsheet timezone:', err?.message || err);
+  });
+
+  return spreadsheetTimezonePromise;
 }
 
 // ── In-memory cache (10-second TTL) ────────────────────────────────────────────
@@ -71,6 +129,7 @@ async function readSheet(tabName) {
 
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
+  await ensureSpreadsheetTimezone();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -96,6 +155,7 @@ async function readSheet(tabName) {
 async function appendRow(tabName, rowObject, headers) {
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
+  await ensureSpreadsheetTimezone();
 
   const values = headers.map((h) => rowObject[h] !== undefined ? String(rowObject[h]) : '');
 
@@ -113,6 +173,7 @@ async function appendRow(tabName, rowObject, headers) {
 async function updateRow(tabName, rowIndex, rowObject, headers) {
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
+  await ensureSpreadsheetTimezone();
 
   const values = headers.map((h) => rowObject[h] !== undefined ? String(rowObject[h]) : '');
 
@@ -198,9 +259,9 @@ function userToSheetRow(user) {
     email_verified: String(user.emailVerified === true),
     client_id: user.clientId || user.client_id || '',
     approval_status: user.approvalStatus || user.approval_status || 'approved',
-    created_at: user.createdAt || user.created_at || new Date().toISOString(),
-    updated_at: user.updatedAt || user.updated_at || new Date().toISOString(),
-    last_login_at: user.lastLoginAt || user.last_login_at || '',
+    created_at: formatTimestampForSheets(user.createdAt || user.created_at, { fallbackToNow: true }),
+    updated_at: formatTimestampForSheets(user.updatedAt || user.updated_at, { fallbackToNow: true }),
+    last_login_at: formatTimestampForSheets(user.lastLoginAt || user.last_login_at),
   };
 }
 
@@ -230,8 +291,8 @@ export async function getAllUsers() {
 export async function createUser(userData) {
   const sheetRow = userToSheetRow({
     ...userData,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await appendRow('users', sheetRow, USER_HEADERS);
   return sheetRowToUser(sheetRow);
@@ -243,7 +304,7 @@ export async function updateUser(userId, partialData) {
   if (!row) return null;
 
   const current = sheetRowToUser(row);
-  const merged = { ...current, ...partialData, updatedAt: new Date().toISOString() };
+  const merged = { ...current, ...partialData, updatedAt: new Date() };
   const sheetRow = userToSheetRow(merged);
 
   await updateRow('users', row.__rowIndex, sheetRow, USER_HEADERS);
@@ -277,9 +338,9 @@ function clientToSheetRow(client) {
     name: client.name || '',
     workflow_ids: Array.isArray(client.workflowIds) ? client.workflowIds.join(',') : (client.workflow_ids || ''),
     onboarding_profile: client.onboardingProfile ? JSON.stringify(client.onboardingProfile) : '',
-    onboarding_submitted_at: client.onboardingSubmittedAt || '',
-    created_at: client.createdAt || client.created_at || new Date().toISOString(),
-    updated_at: client.updatedAt || client.updated_at || new Date().toISOString(),
+    onboarding_submitted_at: formatTimestampForSheets(client.onboardingSubmittedAt || client.onboarding_submitted_at),
+    created_at: formatTimestampForSheets(client.createdAt || client.created_at, { fallbackToNow: true }),
+    updated_at: formatTimestampForSheets(client.updatedAt || client.updated_at, { fallbackToNow: true }),
   };
 }
 
@@ -297,8 +358,8 @@ export async function getAllClients() {
 export async function createClient(data) {
   const sheetRow = clientToSheetRow({
     ...data,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await appendRow('clients', sheetRow, CLIENT_HEADERS);
   return sheetRowToClient(sheetRow);
@@ -310,7 +371,7 @@ export async function updateClient(clientId, partialData) {
   if (!row) return null;
 
   const current = sheetRowToClient(row);
-  const merged = { ...current, ...partialData, updatedAt: new Date().toISOString() };
+  const merged = { ...current, ...partialData, updatedAt: new Date() };
   const sheetRow = clientToSheetRow(merged);
 
   await updateRow('clients', row.__rowIndex, sheetRow, CLIENT_HEADERS);
@@ -326,9 +387,9 @@ export async function createPasswordReset(data) {
     email: (data.email || '').toLowerCase(),
     code: data.code || '',
     attempts: String(data.attempts || 0),
-    expires_at: data.expiresAt || new Date(Date.now() + 10 * 60_000).toISOString(),
+    expires_at: formatTimestampForSheets(data.expiresAt || new Date(Date.now() + 10 * 60_000), { fallbackToNow: true }),
     used: 'false',
-    created_at: new Date().toISOString(),
+    created_at: formatTimestampForSheets(new Date(), { fallbackToNow: true }),
   };
   await appendRow('password_resets', sheetRow, RESET_HEADERS);
   return sheetRow;
@@ -337,12 +398,12 @@ export async function createPasswordReset(data) {
 export async function findPasswordReset(email) {
   const rows = await readSheet('password_resets');
   const target = (email || '').trim().toLowerCase();
-  const now = new Date().toISOString();
+  const now = Date.now();
 
   // Find latest unused, non-expired reset for this email
   const matching = rows
-    .filter((r) => r.email.toLowerCase() === target && r.used !== 'true' && r.expires_at > now)
-    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    .filter((r) => (r.email || '').toLowerCase() === target && r.used !== 'true' && (toTimestampMs(r.expires_at) ?? 0) > now)
+    .sort((a, b) => (toTimestampMs(b.created_at) ?? 0) - (toTimestampMs(a.created_at) ?? 0));
 
   return matching[0] || null;
 }
@@ -367,7 +428,7 @@ export async function createAuditLog(data) {
     user_id: data.userId || '',
     action: data.action || '',
     meta: data.meta ? JSON.stringify(data.meta) : '',
-    created_at: new Date().toISOString(),
+    created_at: formatTimestampForSheets(new Date(), { fallbackToNow: true }),
   };
 
   // Fire and forget — don't block the caller

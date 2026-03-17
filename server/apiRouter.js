@@ -10,16 +10,12 @@ import {
 } from './accessControl.js';
 import {
   findUserForReset,
-  generateResetCode,
-  getResetCode,
-  storeResetCode,
-  incrementAttempts,
-  deleteResetCode,
   issueResetToken,
   verifyResetToken,
 } from '../api/_lib/resetCodes.js';
 import { loginWithGoogle, signupClientUserWithGoogle } from '../api/_lib/auth.js';
 import { sendResetCodeEmail } from '../api/_lib/email.js';
+import { callN8nWebhook } from '../api/_lib/n8n-webhook.js';
 import {
   addSupportTicketMessage,
   closeSupportTicket,
@@ -332,15 +328,7 @@ export function createApiRouter(n8n) {
           return true;
         }
 
-        const existing = await getResetCode(email);
-        if (existing && Date.now() - existing.createdAt < 60_000) {
-          sendJson(res, 200, successResponse);
-          return true;
-        }
-
-        const code = generateResetCode();
-        await storeResetCode(email, code);
-        await sendResetCodeEmail(email, code);
+        await sendResetCodeEmail(email);
 
         sendJson(res, 200, successResponse);
         return true;
@@ -349,33 +337,27 @@ export function createApiRouter(n8n) {
       if (pathname === '/api/auth/reset-verify' && method === 'POST') {
         const body = await readJsonBody(req);
         const email = String(body?.email || '').trim().toLowerCase();
-        const code = String(body?.code || '').trim();
+        const otp = String(body?.code || body?.otp || '').trim();
 
-        if (!EMAIL_PATTERN.test(email) || !code) {
-          sendJson(res, 400, { error: 'Email and code are required' });
+        if (!EMAIL_PATTERN.test(email) || !otp) {
+          sendJson(res, 400, { error: 'Email and OTP are required' });
           return true;
         }
 
-        const stored = await getResetCode(email);
-        if (!stored) {
-          sendJson(res, 400, { error: 'No reset code found. It may have expired.' });
+        const result = await callN8nWebhook('/webhook/OTP_Verify', { email, otp });
+
+        if (!result.ok) {
+          const message = result.data?.message || 'Invalid or expired code';
+          sendJson(res, 400, { error: message });
           return true;
         }
 
-        if (stored.attempts >= 5) {
-          await deleteResetCode(email);
-          sendJson(res, 400, { error: 'Too many failed attempts. Please request a new code.' });
+        if (result.data && result.data.success === false) {
+          const message = result.data?.message || 'Invalid or expired code';
+          sendJson(res, 400, { error: message });
           return true;
         }
 
-        if (stored.code !== code) {
-          await incrementAttempts(email, stored);
-          const remaining = 4 - stored.attempts;
-          sendJson(res, 400, { error: `Invalid code. ${remaining > 0 ? `${remaining} attempt(s) remaining.` : 'Please request a new code.'}` });
-          return true;
-        }
-
-        await deleteResetCode(email);
         const resetToken = issueResetToken(email);
         sendJson(res, 200, { resetToken });
         return true;
@@ -418,6 +400,11 @@ export function createApiRouter(n8n) {
         if (isGoogleSheetsConfigured()) {
           createAuditLog({ userId: user.id, action: 'password_reset', meta: { email: tokenData.email } });
         }
+
+        // Fire-and-forget: notify n8n to update its sheet and send confirmation email
+        callN8nWebhook('/webhook/new_password', { email: tokenData.email, password: newPassword }).catch((err) => {
+          console.error('[Password Reset] n8n new_password webhook error:', err?.message || String(err));
+        });
 
         sendJson(res, 200, { message: 'Password has been reset successfully.' });
         return true;

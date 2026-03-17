@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { callN8nWebhook } from './n8n-webhook.js';
 
 let transporter = null;
 
@@ -35,47 +36,59 @@ function summarizeText(value, maxLength = 280) {
   return `${normalized.slice(0, Math.max(0, maxLength - 1))}...`;
 }
 
-export async function sendResetCodeEmail(toEmail, code) {
-  const transport = getTransporter();
+/**
+ * Send a password reset email via n8n only.
+ * n8n generates and sends the OTP email.
+ * Throws if N8N_WEBHOOK_BASE_URL is not configured.
+ */
+export async function sendResetCodeEmail(toEmail, code, user) {
+  const webhookBase = process.env.N8N_WEBHOOK_BASE_URL?.trim();
 
-  if (!transport) {
-    console.log(`[Password Reset] Code for ${toEmail}: ${code}`);
-    console.log('[Password Reset] Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails in production.');
-    return {
-      delivered: false,
-      provider: 'console',
-      reason: 'Gmail SMTP credentials are not configured.',
-    };
+  if (!webhookBase) {
+    throw new Error(
+      'N8N_WEBHOOK_BASE_URL is not configured. Password resets require n8n webhook integration.'
+    );
   }
 
-  const result = await transport.sendMail({
-    from: getFromEmail(),
-    to: toEmail,
-    subject: 'Your Password Reset Code',
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="color: #1a1a1a; margin-bottom: 16px;">Password Reset</h2>
-        <p style="color: #444; font-size: 15px; line-height: 1.5;">
-          You requested a password reset. Use the code below to verify your identity:
-        </p>
-        <div style="background: #f4f4f5; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #111;">${code}</span>
-        </div>
-        <p style="color: #666; font-size: 13px; line-height: 1.5;">
-          This code expires in 10 minutes. If you didn't request a password reset, you can safely ignore this email.
-        </p>
-      </div>
-    `,
-  });
+  const name = user?.clientId || toEmail.split('@')[0];
+  const result = await callN8nWebhook('/reset_password', { name, email: toEmail, otp: code });
+  if (result.ok) {
+    return { delivered: true, provider: 'n8n' };
+  }
 
-  return {
-    delivered: true,
-    provider: 'gmail',
-    id: String(result?.messageId || ''),
-  };
+  const errorMsg = result.error || `HTTP ${result.status}`;
+  console.error(`[Password Reset] n8n webhook failed: ${errorMsg}`);
+  console.error(`[Password Reset] Response:`, result.data);
+  throw new Error(`n8n password reset webhook failed: ${errorMsg}`);
 }
 
+/**
+ * Send a support ticket notification email to an admin.
+ * When N8N_WEBHOOK_BASE_URL is set, delegates to n8n support ticket webhook.
+ * Falls back to Nodemailer (or console log) if n8n is not configured.
+ */
 export async function sendSupportTicketCreatedEmail({ toEmail, ticket, ticketUrl }) {
+  const webhookBase = process.env.N8N_WEBHOOK_BASE_URL?.trim();
+
+  if (webhookBase) {
+    const webhookPath = process.env.N8N_SUPPORT_WEBHOOK_PATH?.trim() || '/webhook/support_ticket';
+    const result = await callN8nWebhook(webhookPath, {
+      toEmail,
+      ticketId: ticket?.id || '',
+      subject: ticket?.subject || 'Support request',
+      clientName: ticket?.clientName || '',
+      clientEmail: ticket?.clientEmail || '',
+      message: ticket?.messages?.[0]?.body || '',
+      ticketUrl: String(ticketUrl || ''),
+    });
+    if (result.ok) {
+      return { delivered: true, provider: 'n8n' };
+    }
+    console.error(`[Support Ticket] n8n webhook failed (${result.status}): ${result.error || JSON.stringify(result.data)}`);
+    return { delivered: false, provider: 'n8n', reason: result.error || `HTTP ${result.status}` };
+  }
+
+  // Nodemailer fallback
   const transport = getTransporter();
   const safeTicketUrl = String(ticketUrl || '').trim();
   const subject = escapeHtml(ticket?.subject || 'Support request');

@@ -1,4 +1,4 @@
-import { findUserForReset, generateResetCode, getResetCode, storeResetCode } from '../_lib/resetCodes.js';
+import { findUserForReset, generateResetCode } from '../_lib/resetCodes.js';
 import { sendResetCodeEmail } from '../_lib/email.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,16 +27,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Rate limit: skip if code was created less than 60s ago
-    const existing = await getResetCode(email);
-    if (existing && Date.now() - existing.createdAt < 60_000) {
-      res.status(200).json(successResponse);
-      return;
-    }
-
     const code = generateResetCode();
-    await storeResetCode(email, code);
-    await sendResetCodeEmail(email, code);
+    await sendResetCodeEmail(email, code, user);
 
     res.status(200).json(successResponse);
   } catch (err) {

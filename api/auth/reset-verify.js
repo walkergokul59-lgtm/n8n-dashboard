@@ -1,4 +1,5 @@
-import { getResetCode, incrementAttempts, deleteResetCode, issueResetToken } from '../_lib/resetCodes.js';
+import { issueResetToken } from '../_lib/resetCodes.js';
+import { callN8nWebhook } from '../_lib/n8n-webhook.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -11,37 +12,29 @@ export default async function handler(req, res) {
 
   try {
     const email = String(req?.body?.email || '').trim().toLowerCase();
-    const code = String(req?.body?.code || '').trim();
+    const otp = String(req?.body?.code || req?.body?.otp || '').trim();
 
-    if (!EMAIL_PATTERN.test(email) || !code) {
-      res.status(400).json({ error: 'Email and code are required' });
+    if (!EMAIL_PATTERN.test(email) || !otp) {
+      res.status(400).json({ error: 'Email and OTP are required' });
       return;
     }
 
-    const stored = await getResetCode(email);
-    if (!stored) {
-      res.status(400).json({ error: 'No reset code found. It may have expired.' });
+    const result = await callN8nWebhook('/OTP_Verify', { email, otp });
+
+    if (!result.ok) {
+      const message = result.data?.message || 'Invalid or expired code';
+      res.status(400).json({ error: message });
       return;
     }
 
-    // Max 5 attempts
-    if (stored.attempts >= 5) {
-      await deleteResetCode(email);
-      res.status(400).json({ error: 'Too many failed attempts. Please request a new code.' });
+    // n8n may return { success: false } even with HTTP 200
+    if (result.data && result.data.success === false) {
+      const message = result.data?.message || 'Invalid or expired code';
+      res.status(400).json({ error: message });
       return;
     }
 
-    if (stored.code !== code) {
-      await incrementAttempts(email, stored);
-      const remaining = 4 - stored.attempts;
-      res.status(400).json({ error: `Invalid code. ${remaining > 0 ? `${remaining} attempt(s) remaining.` : 'Please request a new code.'}` });
-      return;
-    }
-
-    // Code matches — delete it and issue a reset token
-    await deleteResetCode(email);
     const resetToken = issueResetToken(email);
-
     res.status(200).json({ resetToken });
   } catch (err) {
     res.status(500).json({ error: err?.message || String(err) });

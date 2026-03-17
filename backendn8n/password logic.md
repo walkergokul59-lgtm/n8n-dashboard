@@ -1,0 +1,12 @@
+Technical Specification: Password Recovery via n8n1. OverviewThis documentation details a three-stage automated password reset system. It utilizes n8n as the logic engine, Google Sheets as the database, and Gmail for secure user communication.2. System PrerequisitesRuntime: n8n hosted on a Docker-enabled VPS.Database: Google Sheets containing a "Verified Data" sheet.Communication: Gmail account authorized via OAuth2.3. Webhook API ReferenceThe backend service must trigger the workflow by sending POST requests with JSON payloads to the following endpoints.Phase I: Initiation (/reset_password)Objective: Verify user existence and dispatch an OTP.Payload:JSON{
+  "email": "user@example.com"
+}
+Logic Flow:Fetch all client credentials from the Google Sheet.Filter for the provided email.Generate a 4-digit numeric OTP using a JavaScript Code node.Update the OTP column in the sheet and email the code to the user.Phase II: OTP Validation (/OTP_Verify)Objective: Validate the user-provided code and clear it from the database.Payload:JSON{
+  "email": "user@example.com",
+  "otp": "1234"
+}
+Logic Flow:Re-fetch current sheet data to ensure real-time accuracy.Compare the received otp with the one stored in the sheet.If matched, set the OTP column to NULL to invalidate further use.Send a Gmail notification containing the "New Password" page link.Phase III: Credential Update (/new_password)Objective: Overwrite the old password with the new user-defined credential.Payload:JSON{
+  "email": "user@example.com",
+  "password": "NewSecurePassword2026"
+}
+Logic Flow:Locate the correct user record via the email identifier.Update the password column in the Google Sheet.Send a final success confirmation email to the user.4. Google Sheets Database SchemaThe workflow relies on a specific column structure within the Verified Data sheet:Column NameTypeDescriptionEmail IdStringPrimary Key used for matchingOTPStringTemporary 4-digit code (cleared after use)StatusStringUser account statusIsverifiedBooleanVerification flagTimeStrampStringLog of the last activity5. Performance & ReliabilityScalability: The workflow uses Split In Batches (v3) nodes to prevent memory overflow when processing large user lists.Credentials: Uses Google Sheets Mad account and HF Gmail account OAuth2 credentials for secure API access.Looping: The Loop Over Items nodes ensure that the workflow iterates through all sheet rows until the matching email is found.

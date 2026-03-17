@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { verifyResetToken } from '../_lib/resetCodes.js';
+import { callN8nWebhook } from '../_lib/n8n-webhook.js';
 import { readRbacConfig, writeRbacConfig } from '../../server/rbacStore.js';
 import { findUserByEmail } from '../../server/accessControl.js';
 import { createAuditLog, isGoogleSheetsConfigured } from '../../server/googleSheetsStore.js';
@@ -49,6 +50,11 @@ export default async function handler(req, res) {
     if (isGoogleSheetsConfigured()) {
       createAuditLog({ userId: user.id, action: 'password_reset', meta: { email: tokenData.email } });
     }
+
+    // Fire-and-forget: notify n8n to update its sheet and send confirmation email
+    callN8nWebhook('/new_password', { email: tokenData.email, password: newPassword }).catch((err) => {
+      console.error('[Password Reset] n8n new_password webhook error:', err?.message || String(err));
+    });
 
     res.status(200).json({ message: 'Password has been reset successfully.' });
   } catch (err) {
