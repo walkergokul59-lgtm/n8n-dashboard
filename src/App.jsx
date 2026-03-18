@@ -100,6 +100,21 @@ function RequireApprovedClient({ children }) {
   return children;
 }
 
+function RequireTierFeature({ feature, children }) {
+  const { isLoading, isAuthenticated, isAdmin, hasFeature } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking access...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin || hasFeature(feature)) return children;
+  return <Navigate to="/dashboard" replace />;
+}
+
 function RoleBasedSettings() {
   const { isAdmin } = useAuth();
   return isAdmin ? <AdminSettings /> : <Settings />;
@@ -159,9 +174,9 @@ function App() {
               >
                 <Route index element={<HomeRedirect />} />
                 <Route path="dashboard" element={<RequireApprovedClient><Dashboard /></RequireApprovedClient>} />
-                <Route path="support" element={<RequireApprovedClient><SupportChat /></RequireApprovedClient>} />
-                <Route path="support/:ticketId" element={<RequireApprovedClient><SupportChat /></RequireApprovedClient>} />
-                <Route path="invoice-runs" element={<RequireApprovedClient><InvoiceRuns /></RequireApprovedClient>} />
+                <Route path="support" element={<RequireApprovedClient><RequireTierFeature feature="supportChat"><SupportChat /></RequireTierFeature></RequireApprovedClient>} />
+                <Route path="support/:ticketId" element={<RequireApprovedClient><RequireTierFeature feature="supportChat"><SupportChat /></RequireTierFeature></RequireApprovedClient>} />
+                <Route path="invoice-runs" element={<RequireApprovedClient><RequireTierFeature feature="invoiceRuns"><InvoiceRuns /></RequireTierFeature></RequireApprovedClient>} />
                 <Route path="order-sync" element={<RequireApprovedClient><OrderSync /></RequireApprovedClient>} />
                 <Route path="sms-outreach" element={<RequireApprovedClient><SmsOutreach /></RequireApprovedClient>} />
                 <Route path="settings" element={<RoleBasedSettings />} />

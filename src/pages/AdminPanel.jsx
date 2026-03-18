@@ -107,7 +107,6 @@ export default function AdminPanel() {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const [saveMessage, setSaveMessage] = useState('');
-    const [persistenceMode, setPersistenceMode] = useState('');
     const [openWorkflowPickerFor, setOpenWorkflowPickerFor] = useState('');
     const [workflowSearchByClientId, setWorkflowSearchByClientId] = useState({});
 
@@ -133,7 +132,6 @@ export default function AdminPanel() {
                 setUsers(Array.isArray(rbac?.users) ? rbac.users : []);
                 setClients(Array.isArray(rbac?.clients) ? rbac.clients : []);
                 setWorkflows(Array.isArray(workflowPayload?.data) ? workflowPayload.data : []);
-                setPersistenceMode(String(rbac?.persistence || 'unknown'));
             } catch (err) {
                 if (mounted) setError(err?.message || 'Failed to load admin data');
             } finally {
@@ -155,7 +153,15 @@ export default function AdminPanel() {
 
     const addClient = () => {
         const nextId = `client-${Date.now()}`;
-        setClients((prev) => [...prev, { id: nextId, name: `New Client ${prev.length + 1}`, workflowIds: [] }]);
+        setClients((prev) => [...prev, { id: nextId, name: `New Client ${prev.length + 1}`, workflowIds: [], tier: 'free', tierSetAt: null }]);
+    };
+
+    const updateClient = (idx, patch) => {
+        setClients((prev) => {
+            const next = [...prev];
+            next[idx] = { ...next[idx], ...patch };
+            return next;
+        });
     };
 
     const addUser = () => {
@@ -205,7 +211,6 @@ export default function AdminPanel() {
             const saved = await response.json();
             setUsers(saved?.users || []);
             setClients(saved?.clients || []);
-            setPersistenceMode(String(saved?.persistence || 'unknown'));
             setSaveMessage('Access mapping saved');
         } catch (err) {
             setError(err?.message || 'Failed to save');
@@ -238,12 +243,6 @@ export default function AdminPanel() {
             {error ? <p className="text-sm text-rose-400">{error}</p> : null}
             {saveMessage ? <p className="text-sm text-emerald-400">{saveMessage}</p> : null}
             <p className="text-sm text-amber-300">Pending client approvals: {pendingApprovalsCount}</p>
-            {persistenceMode ? (
-                <p className="text-xs text-gray-500">
-                    RBAC persistence: <span className="text-gray-300">{persistenceMode}</span>
-                    {persistenceMode !== 'kv' ? ' (For Vercel durability, configure KV_REST_API_URL and KV_REST_API_TOKEN.)' : ''}
-                </p>
-            ) : null}
 
             <section className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -369,6 +368,32 @@ export default function AdminPanel() {
                             >
                                 Remove Client
                             </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex flex-col gap-1">
+                                <p className="text-xs uppercase tracking-wider text-gray-400">Subscription Tier</p>
+                                <select
+                                    value={client.tier || 'free'}
+                                    onChange={(event) => {
+                                        const newTier = event.target.value;
+                                        updateClient(clientIndex, {
+                                            tier: newTier,
+                                            tierSetAt: newTier !== 'free' ? new Date().toISOString() : null,
+                                        });
+                                    }}
+                                    className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                                >
+                                    <option value="free">Free</option>
+                                    <option value="platinum">Platinum</option>
+                                    <option value="gold">Gold</option>
+                                </select>
+                            </div>
+                            {client.tier && client.tier !== 'free' && client.tierSetAt && (
+                                <p className="text-xs text-amber-300 self-end pb-1.5">
+                                    Expires: {new Date(new Date(client.tierSetAt).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                                </p>
+                            )}
                         </div>
 
                         <div>

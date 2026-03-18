@@ -103,6 +103,10 @@ async function ensureSpreadsheetTimezone() {
 const cache = new Map();
 const CACHE_TTL_MS = 10_000;
 
+// Column map cache: header name → 0-based column index, longer TTL
+const colMapCache = new Map();
+const COL_MAP_TTL_MS = 60_000;
+
 function getCached(tabName) {
   const entry = cache.get(tabName);
   if (!entry) return null;
@@ -119,6 +123,35 @@ function setCache(tabName, data) {
 
 function invalidateCache(tabName) {
   cache.delete(tabName);
+}
+
+function getCachedColMap(tabName) {
+  const entry = colMapCache.get(tabName);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > COL_MAP_TTL_MS) {
+    colMapCache.delete(tabName);
+    return null;
+  }
+  return entry.colMap;
+}
+
+function setColMapCache(tabName, colMap) {
+  colMapCache.set(tabName, { colMap, ts: Date.now() });
+}
+
+function invalidateColMapCache(tabName) {
+  colMapCache.delete(tabName);
+}
+
+// Convert 0-based column index to A1 letter(s): 0→A, 25→Z, 26→AA, etc.
+function colIndexToLetter(idx) {
+  let result = '';
+  let n = idx;
+  while (n >= 0) {
+    result = String.fromCharCode(65 + (n % 26)) + result;
+    n = Math.floor(n / 26) - 1;
+  }
+  return result;
 }
 
 // ── Low-level Sheet helpers ────────────────────────────────────────────────────
@@ -140,6 +173,14 @@ async function readSheet(tabName) {
   if (rows.length < 1) return [];
 
   const headers = rows[0].map((h) => String(h || '').trim());
+
+  // Cache column map while we have the header row
+  const colMap = {};
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i]) colMap[headers[i]] = i;
+  }
+  setColMapCache(tabName, colMap);
+
   const data = rows.slice(1).map((row, rowIndex) => {
     const obj = { __rowIndex: rowIndex + 2 }; // 1-based, +1 for header
     for (let i = 0; i < headers.length; i++) {
@@ -175,16 +216,41 @@ async function updateRow(tabName, rowIndex, rowObject, headers) {
   const spreadsheetId = getSpreadsheetId();
   await ensureSpreadsheetTimezone();
 
-  const values = headers.map((h) => rowObject[h] !== undefined ? String(rowObject[h]) : '');
+  // Use the cached column map (populated by readSheet) to write each field
+  // to its actual column position in the sheet, regardless of column order.
+  const colMap = getCachedColMap(tabName);
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `${tabName}!A${rowIndex}:${String.fromCharCode(64 + headers.length)}${rowIndex}`,
-    valueInputOption: 'RAW',
-    requestBody: { values: [values] },
-  });
+  if (colMap && Object.keys(colMap).length > 0) {
+    // Write each field to its actual column address using batchUpdate
+    const batchData = [];
+    for (const h of headers) {
+      const colIdx = colMap[h];
+      if (colIdx !== undefined && rowObject[h] !== undefined) {
+        batchData.push({
+          range: `${tabName}!${colIndexToLetter(colIdx)}${rowIndex}`,
+          values: [[String(rowObject[h])]],
+        });
+      }
+    }
+    if (batchData.length > 0) {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: { valueInputOption: 'RAW', data: batchData },
+      });
+    }
+  } else {
+    // Fallback: positional write (original behaviour, used when colMap unavailable)
+    const values = headers.map((h) => rowObject[h] !== undefined ? String(rowObject[h]) : '');
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabName}!A${rowIndex}:${colIndexToLetter(headers.length - 1)}${rowIndex}`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [values] },
+    });
+  }
 
   invalidateCache(tabName);
+  invalidateColMapCache(tabName);
 }
 
 function findByField(rows, field, value) {
@@ -210,6 +276,7 @@ const USER_HEADERS = [
 const CLIENT_HEADERS = [
   'id', 'name', 'workflow_ids', 'onboarding_profile',
   'onboarding_submitted_at', 'created_at', 'updated_at',
+  'tier', 'tier_set_at',
 ];
 
 const RESET_HEADERS = [
@@ -329,6 +396,8 @@ function sheetRowToClient(row) {
     onboardingSubmittedAt: row.onboarding_submitted_at || null,
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
+    tier: row.tier || 'free',
+    tierSetAt: row.tier_set_at || null,
   };
 }
 
@@ -341,6 +410,8 @@ function clientToSheetRow(client) {
     onboarding_submitted_at: formatTimestampForSheets(client.onboardingSubmittedAt || client.onboarding_submitted_at),
     created_at: formatTimestampForSheets(client.createdAt || client.created_at, { fallbackToNow: true }),
     updated_at: formatTimestampForSheets(client.updatedAt || client.updated_at, { fallbackToNow: true }),
+    tier: client.tier || 'free',
+    tier_set_at: formatTimestampForSheets(client.tierSetAt || client.tier_set_at),
   };
 }
 

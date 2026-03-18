@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
-import { normalizeApprovalStatus } from './accessControl.js';
+import { normalizeApprovalStatus, VALID_TIERS } from './accessControl.js';
 import {
   isGoogleSheetsConfigured,
   readRbacConfig as sheetsReadRbac,
@@ -144,13 +144,20 @@ export function normalizeRbacConfig(raw) {
     authProviders: user?.authProviders || [],
   })).filter((user) => user.email);
 
-  const clients = ensureArray(input.clients).map((client, index) => ({
-    id: String(client?.id || `client-${index + 1}`),
-    name: String(client?.name || client?.id || `Client ${index + 1}`),
-    workflowIds: uniqueStrings(client?.workflowIds),
-    onboardingProfile: normalizeOnboardingProfile(client?.onboardingProfile),
-    onboardingSubmittedAt: client?.onboardingSubmittedAt ? String(client.onboardingSubmittedAt) : null,
-  })).filter((client) => client.id);
+  const clients = ensureArray(input.clients).map((client, index) => {
+    const storedTier = VALID_TIERS.has(String(client?.tier || '')) ? String(client.tier) : 'free';
+    return {
+      id: String(client?.id || `client-${index + 1}`),
+      name: String(client?.name || client?.id || `Client ${index + 1}`),
+      workflowIds: uniqueStrings(client?.workflowIds),
+      onboardingProfile: normalizeOnboardingProfile(client?.onboardingProfile),
+      onboardingSubmittedAt: client?.onboardingSubmittedAt ? String(client.onboardingSubmittedAt) : null,
+      tier: storedTier,
+      tierSetAt: storedTier !== 'free'
+        ? (client?.tierSetAt ? String(client.tierSetAt) : new Date().toISOString())
+        : null,
+    };
+  }).filter((client) => client.id);
 
   const hasAdmin = users.some((user) => user.role === 'admin' && user.email === 'root@gmail.com');
   if (!hasAdmin) {
@@ -184,6 +191,8 @@ export function normalizeRbacConfig(raw) {
       workflowIds: [],
       onboardingProfile: emptyOnboardingProfile(),
       onboardingSubmittedAt: null,
+      tier: 'free',
+      tierSetAt: null,
     });
   }
 
@@ -314,6 +323,8 @@ export function sanitizeRbacConfigForAdmin(config) {
       workflowIds: uniqueStrings(client.workflowIds),
       onboardingProfile: normalizeOnboardingProfile(client.onboardingProfile),
       onboardingSubmittedAt: client?.onboardingSubmittedAt ? String(client.onboardingSubmittedAt) : null,
+      tier: client.tier || 'free',
+      tierSetAt: client.tierSetAt || null,
     })),
   };
 }

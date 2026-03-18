@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       res.status(401).json({ error: 'Authentication required' });
       return;
     }
-    res.status(200).json({ user: userView(auth.user) });
+    res.status(200).json({ user: userView(auth.user, auth.effectiveTier) });
   } catch (err) {
     res.status(Number.isFinite(err?.status) ? err.status : 500).json({ error: err?.message || String(err) });
   }

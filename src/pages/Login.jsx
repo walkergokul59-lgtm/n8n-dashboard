@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import GoogleAuthButton from '../components/GoogleAuthButton';
 import { useAuth } from '../context/useAuth';
 
 export default function Login() {
-    const { login, signup, loginWithGoogle, signupWithGoogle, isAdmin, isApproved, isAuthenticated, isLoading } = useAuth();
+    const { login, signup, isAdmin, isApproved, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [mode, setMode] = useState('signin');
@@ -17,6 +16,8 @@ export default function Login() {
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showUpsell, setShowUpsell] = useState(false);
+    const [pendingNavigate, setPendingNavigate] = useState(null);
     const requestedPath = `${location.state?.from?.pathname || ''}${location.state?.from?.search || ''}${location.state?.from?.hash || ''}`;
 
     if (!isLoading && isAuthenticated) {
@@ -39,41 +40,19 @@ export default function Login() {
         setIsSubmitting(true);
         try {
             const loggedInUser = await login(loginEmail, loginPassword);
-            navigate(targetPathForUser(loggedInUser), { replace: true });
+            const target = targetPathForUser(loggedInUser);
+            if (
+                loggedInUser?.role !== 'admin' &&
+                loggedInUser?.approvalStatus === 'approved' &&
+                (loggedInUser?.effectiveTier ?? 'free') === 'free'
+            ) {
+                setPendingNavigate(target);
+                setShowUpsell(true);
+            } else {
+                navigate(target, { replace: true });
+            }
         } catch (err) {
             setError(err?.message || 'Failed to login');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const onGoogleSignIn = async (credential) => {
-        setError('');
-        setInfo('');
-        setIsSubmitting(true);
-        try {
-            const loggedInUser = await loginWithGoogle(credential);
-            navigate(targetPathForUser(loggedInUser), { replace: true });
-        } catch (err) {
-            setError(err?.message || 'Failed to login with Google');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const onGoogleSignUp = async (credential) => {
-        setError('');
-        setInfo('');
-        setIsSubmitting(true);
-        try {
-            await signupWithGoogle({
-                credential,
-                clientName: signupClientName,
-            });
-            setInfo('Signup successful. Complete onboarding details in Settings while your account is pending approval.');
-            navigate('/settings', { replace: true, state: { fromSignup: true } });
-        } catch (err) {
-            setError(err?.message || 'Failed to signup with Google');
         } finally {
             setIsSubmitting(false);
         }
@@ -104,6 +83,52 @@ export default function Login() {
             setIsSubmitting(false);
         }
     };
+
+    if (showUpsell) {
+        return (
+            <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center p-6">
+                <div className="w-full max-w-lg bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-lg p-8 space-y-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-[var(--c-text)]">You're on the Free Plan</h2>
+                        <p className="text-sm text-[var(--c-text-muted)] mt-1">Upgrade to unlock more features for your dashboard.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-lg p-4 space-y-2">
+                            <p className="font-semibold text-[var(--c-text)]">Platinum</p>
+                            <ul className="text-sm text-gray-400 space-y-1">
+                                <li>✓ Up to 2 workflows</li>
+                                <li>✓ Failures (24h) KPI</li>
+                                <li>✓ Support Chat</li>
+                                <li className="text-gray-600">✗ CSV Export</li>
+                                <li className="text-gray-600">✗ Invoice Runs</li>
+                            </ul>
+                        </div>
+                        <div className="bg-[var(--c-raised)] border border-amber-400/30 rounded-lg p-4 space-y-2">
+                            <p className="font-semibold text-amber-400">Gold</p>
+                            <ul className="text-sm text-gray-400 space-y-1">
+                                <li>✓ Unlimited workflows</li>
+                                <li>✓ Failures (24h) KPI</li>
+                                <li>✓ Support Chat</li>
+                                <li>✓ CSV Export</li>
+                                <li>✓ Invoice Runs</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p className="text-sm text-gray-400">Contact your admin to upgrade your subscription tier.</p>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate(pendingNavigate || '/dashboard', { replace: true })}
+                        className="w-full py-2.5 rounded-lg bg-[var(--c-accent)] text-white font-bold hover:bg-opacity-90 transition-all"
+                    >
+                        Continue to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center p-6">
@@ -144,19 +169,6 @@ export default function Login() {
 
                 {mode === 'signin' ? (
                     <div className="space-y-4">
-                        <GoogleAuthButton
-                            mode="signin"
-                            disabled={isSubmitting}
-                            onCredential={onGoogleSignIn}
-                            onError={(err) => setError(err?.message || 'Google authentication failed')}
-                        />
-
-                        <div className="flex items-center gap-3">
-                            <div className="h-px flex-1 bg-[var(--c-border)]" />
-                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--c-text-subtle)]">or</span>
-                            <div className="h-px flex-1 bg-[var(--c-border)]" />
-                        </div>
-
                         <form onSubmit={onSignInSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>
@@ -197,34 +209,6 @@ export default function Login() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Client Name</label>
-                            <input
-                                type="text"
-                                value={signupClientName}
-                                onChange={(event) => setSignupClientName(event.target.value)}
-                                className="w-full bg-white border border-[var(--c-border)] rounded-lg px-3 py-2 text-[var(--c-text)] focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)] focus:ring-opacity-20 focus:border-[var(--c-accent)]"
-                                placeholder="Acme Inc. (optional for Google sign up)"
-                            />
-                        </div>
-
-                        <GoogleAuthButton
-                            mode="signup"
-                            disabled={isSubmitting}
-                            onCredential={onGoogleSignUp}
-                            onError={(err) => setError(err?.message || 'Google authentication failed')}
-                        />
-
-                        <p className="text-xs text-[var(--c-text-subtle)]">
-                            Leave Client Name blank to use your Google profile name.
-                        </p>
-
-                        <div className="flex items-center gap-3">
-                            <div className="h-px flex-1 bg-[var(--c-border)]" />
-                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--c-text-subtle)]">or</span>
-                            <div className="h-px flex-1 bg-[var(--c-border)]" />
-                        </div>
-
                         <form onSubmit={onSignUpSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm text-[var(--c-text-muted)] mb-1 font-semibold">Email</label>

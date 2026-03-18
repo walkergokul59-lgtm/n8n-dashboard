@@ -7,6 +7,43 @@ function workflowIdFromExecution(execution) {
 
 const APPROVAL_STATUSES = new Set(['pending', 'approved', 'rejected']);
 
+export const VALID_TIERS = new Set(['free', 'platinum', 'gold']);
+export const TIER_WORKFLOW_LIMITS = { free: 1, platinum: 2, gold: Infinity };
+
+const TIER_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function computeEffectiveTier(client) {
+  if (!client) return 'free';
+  const raw = String(client.tier || 'free');
+  if (!VALID_TIERS.has(raw) || raw === 'free') return 'free';
+  const setAt = client.tierSetAt ? new Date(client.tierSetAt).getTime() : NaN;
+  if (!Number.isFinite(setAt) || Date.now() - setAt > TIER_DURATION_MS) return 'free';
+  return raw;
+}
+
+const TIER_FEATURES = {
+  failures24h: new Set(['platinum', 'gold']),
+  exportCsv:   new Set(['gold']),
+  supportChat: new Set(['platinum', 'gold']),
+  invoiceRuns: new Set(['gold']),
+};
+
+export function hasFeature(effectiveTier, featureName) {
+  return Boolean(TIER_FEATURES[featureName]?.has(effectiveTier));
+}
+
+export function applyTierWorkflowLimit(allowedWorkflowIds, effectiveTier) {
+  if (allowedWorkflowIds === null) return null; // admin
+  const limit = TIER_WORKFLOW_LIMITS[effectiveTier] ?? 1;
+  if (!Number.isFinite(limit)) return allowedWorkflowIds; // gold
+  const capped = new Set();
+  for (const id of allowedWorkflowIds) {
+    if (capped.size >= limit) break;
+    capped.add(id);
+  }
+  return capped;
+}
+
 export function normalizeApprovalStatus(status, fallback = 'approved') {
   const normalized = String(status || '').trim().toLowerCase();
   if (APPROVAL_STATUSES.has(normalized)) return normalized;

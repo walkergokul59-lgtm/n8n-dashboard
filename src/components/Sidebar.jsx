@@ -9,21 +9,20 @@ function cn(...inputs) {
 }
 
 export function Sidebar() {
-    const { isAdmin, user, logout } = useAuth();
-    const isApproved = isAdmin || user?.approvalStatus === 'approved';
+    const { isAdmin, isApproved, hasFeature, user, logout } = useAuth();
 
-    const fullNavItems = [
-        { name: "Dashboard", path: "/dashboard", icon: Grid },
-        { name: "Support Chat", path: "/support", icon: MessageSquare },
-        { name: "Invoice Runs", path: "/invoice-runs", icon: File },
-        { name: "Settings", path: "/settings", icon: Settings },
-    ];
-    const navItems = isApproved
-        ? [...fullNavItems]
-        : [{ name: "Settings", path: "/settings", icon: Settings }];
-    if (isAdmin) {
-        navItems.push({ name: "Admin", path: "/admin", icon: Shield });
-    }
+    const navItems = (() => {
+        if (!isApproved) return [{ name: "Settings", path: "/settings", icon: Settings }];
+        const items = [{ name: "Dashboard", path: "/dashboard", icon: Grid }];
+        if (isAdmin || hasFeature('supportChat'))
+            items.push({ name: "Support Chat", path: "/support", icon: MessageSquare });
+        if (isAdmin || hasFeature('invoiceRuns'))
+            items.push({ name: "Invoice Runs", path: "/invoice-runs", icon: File });
+        items.push({ name: "Settings", path: "/settings", icon: Settings });
+        if (isAdmin)
+            items.push({ name: "Admin", path: "/admin", icon: Shield });
+        return items;
+    })();
 
     return (
         <div className="relative z-10 w-[250px] min-h-screen bg-[var(--c-surface)] border-r border-[var(--c-border)] flex flex-col shrink-0">

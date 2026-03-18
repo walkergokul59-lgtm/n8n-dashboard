@@ -90,7 +90,7 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", icon, iconC
 export default function Dashboard() {
     const showSystemHealthCard = false;
     const { dataSource } = useSettings();
-    const { apiFetch } = useAuth();
+    const { apiFetch, hasFeature } = useAuth();
     const [selectedWorkflowId, setSelectedWorkflowId] = useState("");
     const [isWorkflowPickerOpen, setIsWorkflowPickerOpen] = useState(false);
     const [workflowSearch, setWorkflowSearch] = useState("");
@@ -510,16 +510,18 @@ export default function Dashboard() {
                         Refresh Data
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={handleExportExcel}
-                        disabled={!canExport}
-                        title={!canExport ? exportDisabledReason : "Export dashboard metrics to Excel"}
-                        className="inline-flex items-center rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-4 py-2 text-sm font-semibold text-[var(--c-text)] transition hover:border-[var(--c-accent)]/80 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <Download size={14} className={`mr-2 ${isExporting ? "animate-pulse" : ""}`} />
-                        {isExporting ? "Exporting..." : "Export Excel (CSV)"}
-                    </button>
+                    {hasFeature('exportCsv') && (
+                        <button
+                            type="button"
+                            onClick={handleExportExcel}
+                            disabled={!canExport}
+                            title={!canExport ? exportDisabledReason : "Export dashboard metrics to Excel"}
+                            className="inline-flex items-center rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-4 py-2 text-sm font-semibold text-[var(--c-text)] transition hover:border-[var(--c-accent)]/80 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Download size={14} className={`mr-2 ${isExporting ? "animate-pulse" : ""}`} />
+                            {isExporting ? "Exporting..." : "Export Excel (CSV)"}
+                        </button>
+                    )}
 
                     <p className={`text-sm ${rangeError ? "text-rose-400" : "text-gray-400"}`}>
                         {rangeSummary} {selectedWorkflowId ? `| Filtered to workflow ${selectedWorkflowId}` : "| Using all workflows"}
@@ -562,7 +564,7 @@ export default function Dashboard() {
 
                 {/* Right Side Sections */}
                 <div className="w-full lg:w-[40%] flex flex-col sm:flex-row lg:flex-col gap-6">
-                    <RecentFailures count={data?.failures24h || 0} />
+                    {hasFeature('failures24h') && <RecentFailures count={data?.failures24h || 0} />}
                     {showSystemHealthCard && <SystemHealth />}
                 </div>
             </div>

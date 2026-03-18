@@ -1,10 +1,13 @@
 import bcrypt from 'bcryptjs';
 import {
   applyWorkflowSelection,
+  applyTierWorkflowLimit,
   authenticateUser,
+  computeEffectiveTier,
   findUserByEmail,
   findUserById,
   getAllowedWorkflowIds,
+  hasFeature,
   isUserApproved,
   normalizeApprovalStatus,
 } from './accessControl.js';
@@ -13,7 +16,6 @@ import {
   issueResetToken,
   verifyResetToken,
 } from '../api/_lib/resetCodes.js';
-import { loginWithGoogle, signupClientUserWithGoogle } from '../api/_lib/auth.js';
 import { sendResetCodeEmail } from '../api/_lib/email.js';
 import { callN8nWebhook } from '../api/_lib/n8n-webhook.js';
 import {
@@ -138,16 +140,29 @@ async function requireUser(req, res) {
     sendJson(res, 401, { error: 'Invalid user session' });
     return null;
   }
-  return { user, config };
+
+  let effectiveTier = 'free';
+  if (user.role !== 'admin') {
+    const client = (config.clients || []).find((c) => String(c.id) === String(user.clientId));
+    effectiveTier = computeEffectiveTier(client);
+  }
+  return { user, config, effectiveTier };
 }
 
-function userView(user) {
+function userView(user, effectiveTier = 'free') {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     clientId: user.clientId,
     approvalStatus: normalizeApprovalStatus(user.approvalStatus, 'approved'),
+    effectiveTier,
+    features: {
+      failures24h: user.role === 'admin' || hasFeature(effectiveTier, 'failures24h'),
+      exportCsv:   user.role === 'admin' || hasFeature(effectiveTier, 'exportCsv'),
+      supportChat: user.role === 'admin' || hasFeature(effectiveTier, 'supportChat'),
+      invoiceRuns: user.role === 'admin' || hasFeature(effectiveTier, 'invoiceRuns'),
+    },
   };
 }
 
@@ -191,6 +206,12 @@ export function createApiRouter(n8n) {
           createAuditLog({ userId: user.id, action: 'login', meta: { email: user.email } });
         }
 
+        let loginEffectiveTier = 'free';
+        if (user.role !== 'admin') {
+          const client = (config.clients || []).find((c) => String(c.id) === String(user.clientId));
+          loginEffectiveTier = computeEffectiveTier(client);
+        }
+
         const token = issueToken(
           {
             sub: user.id,
@@ -201,7 +222,7 @@ export function createApiRouter(n8n) {
           AUTH_SECRET(),
           60 * 60 * 24
         );
-        sendJson(res, 200, { token, user: userView(user) });
+        sendJson(res, 200, { token, user: userView(user, loginEffectiveTier) });
         return true;
       }
 
@@ -240,6 +261,8 @@ export function createApiRouter(n8n) {
           workflowIds: [],
           onboardingProfile: emptyOnboardingProfile(),
           onboardingSubmittedAt: null,
+          tier: 'free',
+          tierSetAt: null,
         };
         const hashedPassword = bcrypt.hashSync(password, 10);
         const nextUser = {
@@ -277,32 +300,7 @@ export function createApiRouter(n8n) {
           60 * 60 * 24
         );
 
-        sendJson(res, 201, { token, user: userView(createdUser) });
-        return true;
-      }
-
-      if (pathname === '/api/auth/google' && method === 'POST') {
-        const body = await readJsonBody(req);
-        const mode = String(body?.mode || 'signin').trim().toLowerCase();
-        const credential = String(body?.credential || '').trim();
-        const clientName = String(body?.clientName || '').trim();
-
-        if (!credential) {
-          sendJson(res, 400, { error: 'Google credential is required' });
-          return true;
-        }
-
-        if (mode === 'signup') {
-          sendJson(res, 201, await signupClientUserWithGoogle({ credential, clientName }));
-          return true;
-        }
-
-        if (mode !== 'signin') {
-          sendJson(res, 400, { error: 'Invalid Google auth mode' });
-          return true;
-        }
-
-        sendJson(res, 200, await loginWithGoogle(credential));
+        sendJson(res, 201, { token, user: userView(createdUser, 'free') });
         return true;
       }
 
@@ -413,7 +411,7 @@ export function createApiRouter(n8n) {
       if (pathname === '/api/auth/me' && method === 'GET') {
         const auth = await requireUser(req, res);
         if (!auth) return true;
-        sendJson(res, 200, { user: userView(auth.user) });
+        sendJson(res, 200, { user: userView(auth.user, auth.effectiveTier) });
         return true;
       }
 
@@ -576,13 +574,16 @@ export function createApiRouter(n8n) {
           return true;
         }
         const baseAllowedWorkflowIds = getAllowedWorkflowIds(auth.config, auth.user);
+        const tierCapped = applyTierWorkflowLimit(baseAllowedWorkflowIds, auth.effectiveTier);
         const selectedWorkflowIds = getQueryParam(req.url, 'workflowIds');
         const access = {
-          allowedWorkflowIds: applyWorkflowSelection(baseAllowedWorkflowIds, selectedWorkflowIds),
+          allowedWorkflowIds: applyWorkflowSelection(tierCapped, selectedWorkflowIds),
         };
 
         if (pathname === '/api/dashboard/overview' && method === 'GET') {
-          sendJson(res, 200, await buildOverview(n8n, access));
+          const raw = await buildOverview(n8n, access);
+          const canSeeFailures = auth.user.role === 'admin' || hasFeature(auth.effectiveTier, 'failures24h');
+          sendJson(res, 200, { ...raw, failures24h: canSeeFailures ? raw.failures24h : undefined });
           return true;
         }
 
@@ -622,9 +623,11 @@ export function createApiRouter(n8n) {
             res.write(`data: ${JSON.stringify(data)}\n\n`);
           };
 
+          const canSeeFailuresStream = auth.user.role === 'admin' || hasFeature(auth.effectiveTier, 'failures24h');
           const sendOverview = async () => {
             try {
-              send('overview', await buildOverview(n8n, access));
+              const raw = await buildOverview(n8n, access);
+              send('overview', { ...raw, failures24h: canSeeFailuresStream ? raw.failures24h : undefined });
             } catch (error) {
               send('server-error', { message: error?.message || String(error) });
             }

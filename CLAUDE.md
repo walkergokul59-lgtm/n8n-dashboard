@@ -42,10 +42,6 @@ N8N_AUTH_HEADER=X-N8N-API-KEY             # Optional: custom auth header (if not
 # Dashboard authentication
 APP_AUTH_SECRET=<long-random-string>      # JWT secret for session tokens (required)
 
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=<your-google-client-id>  # OAuth client ID from Google Console
-VITE_GOOGLE_CLIENT_ID=<same-as-above>     # Browser-side client ID (must match)
-
 # Gmail SMTP (optional — for password reset & support ticket emails)
 GMAIL_USER=your-email@gmail.com           # Gmail address
 GMAIL_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx    # Gmail App Password (requires 2FA)
@@ -72,10 +68,6 @@ N8N_AUTH_TYPE=bearer                      # Auth method
 
 # Dashboard authentication
 APP_AUTH_SECRET=<long-random-string>      # JWT secret for session tokens (required)
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=<your-google-client-id>  # OAuth client ID from Google Console
-VITE_GOOGLE_CLIENT_ID=<same-as-above>     # Browser-side client ID (must match)
 
 # Gmail SMTP (for password reset & support ticket emails)
 GMAIL_USER=your-email@gmail.com           # Gmail address
@@ -215,7 +207,7 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 
 ### Authentication Methods
 
-The app supports three authentication flows:
+The app supports two authentication flows:
 
 **1. Email/Password Login** (`api/auth/login.js`, `server/apiRouter.js`)
 - Direct login with email and password
@@ -224,15 +216,7 @@ The app supports three authentication flows:
   - Client: `client1@gmail.com` / `client1`
 - Tokens stored in localStorage as `n8nDashboardAuthToken`
 
-**2. Google OAuth** (`api/auth/google.js`, `server/googleAuth.js`)
-- Sign in or sign up using Google account
-- Requires `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` in environment
-- Frontend uses `GoogleAuthButton` component (GoogleAuthButton.jsx)
-- Existing users with matching email can use Google OAuth
-- New signup users require admin approval before dashboard access
-- JWT token verification via `verifyGoogleIdToken()` in `server/googleAuth.js`
-
-**3. Password Reset** (`api/auth/reset-request.js`, `api/auth/reset-verify.js`, `api/auth/reset-password.js`)
+**2. Password Reset** (`api/auth/reset-request.js`, `api/auth/reset-verify.js`, `api/auth/reset-password.js`)
 - User requests reset via email (sends reset code)
 - System generates time-limited reset code (6-digit, 10-minute expiry)
 - User verifies code and sets new password
@@ -286,7 +270,6 @@ Production deployment uses Vercel serverless functions instead of Node server:
 **Authentication endpoints**:
 - **`api/auth/login.js`** — Email/password login
 - **`api/auth/signup.js`** — Client user signup
-- **`api/auth/google.js`** — Google OAuth sign-in/sign-up
 - **`api/auth/me.js`** — Current user info endpoint
 - **`api/auth/reset-request.js`** — Request password reset (sends email)
 - **`api/auth/reset-verify.js`** — Verify reset code
@@ -315,7 +298,7 @@ Production deployment uses Vercel serverless functions instead of Node server:
 - **`api/_lib/email.js`** — Email sending via Gmail SMTP (Nodemailer)
 - **`api/_lib/resetCodes.js`** — Password reset code generation and validation
 
-These functions handle the same logic as `server/` but in serverless context. They require Vercel environment variables (set in Vercel dashboard): `N8N_BASE_URL`, `N8N_API_TOKEN`, `N8N_API_BASE_PATH`, `APP_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, etc.
+These functions handle the same logic as `server/` but in serverless context. They require Vercel environment variables (set in Vercel dashboard): `N8N_BASE_URL`, `N8N_API_TOKEN`, `N8N_API_BASE_PATH`, `APP_AUTH_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEETS_SPREADSHEET_ID`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, etc.
 
 ## Development Workflow
 
