@@ -2,11 +2,10 @@ import { NavLink } from "react-router-dom";
 import { Grid, File, MessageSquare, Settings, Shield } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useAuth } from "../context/useAuth";
+import { useAuth } from "../../context/useAuth";
+import { cn } from "../../lib/utils";
 
-function cn(...inputs) {
-    return twMerge(clsx(inputs));
-}
+
 
 export function Sidebar() {
     const { isAdmin, isApproved, hasFeature, user, logout } = useAuth();

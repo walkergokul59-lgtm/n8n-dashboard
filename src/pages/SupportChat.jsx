@@ -12,6 +12,8 @@ import {
     User,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
+import { StatusBadge } from '../components/support/StatusBadge';
+import { TicketCard } from '../components/support/TicketCard';
 
 const LIST_POLL_INTERVAL_MS = 15000;
 const THREAD_POLL_INTERVAL_MS = 5000;
@@ -41,47 +43,7 @@ async function readErrorMessage(response, fallback) {
     return payload?.error || fallback;
 }
 
-function StatusBadge({ status }) {
-    const isOpen = status === 'open';
-    return (
-        <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                isOpen
-                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-            }`}
-        >
-            {isOpen ? <Clock3 size={13} /> : <CheckCircle2 size={13} />}
-            {isOpen ? 'Open' : 'Closed'}
-        </span>
-    );
-}
 
-function TicketListItem({ ticket, isActive, onClick }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                isActive
-                    ? 'border-[var(--c-accent)]/60 bg-[var(--c-accent)]/10'
-                    : 'border-[var(--c-border-light)] bg-[var(--c-bg)] hover:border-[var(--c-accent)]/40'
-            }`}
-        >
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[var(--c-text)]">{ticket.subject}</p>
-                    <p className="mt-1 text-xs text-gray-400">{ticket.id}</p>
-                </div>
-                <StatusBadge status={ticket.status} />
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-gray-400">
-                <span className="truncate">{ticket.clientName || ticket.clientEmail || 'Client'}</span>
-                <span>{formatDateTime(ticket.updatedAt)}</span>
-            </div>
-        </button>
-    );
-}
 
 export default function SupportChat() {
     const { apiFetch, user } = useAuth();
@@ -396,7 +358,7 @@ export default function SupportChat() {
                     ) : (
                         <div className="space-y-3">
                             {visibleTickets.map((ticket) => (
-                                <TicketListItem
+                                <TicketCard
                                     key={ticket.id}
                                     ticket={ticket}
                                     isActive={ticket.id === ticketId}

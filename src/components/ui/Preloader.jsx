@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { gsap } from "../lib/gsap.js";
+import { gsap } from "../../lib/gsap.js";
 import "./Preloader.css";
 
 export default function Preloader({ ready, onDone }) {

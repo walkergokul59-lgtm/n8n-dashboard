@@ -2,9 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Sun, Moon } from "lucide-react";
-import { gsap } from "../lib/gsap.js";
-import { useAuth } from "../context/useAuth";
-import { useSettings } from "../context/SettingsContext";
+import { gsap } from "../../lib/gsap.js";
+import { useAuth } from "../../context/useAuth";
+import { useSettings } from "../../context/SettingsContext";
 
 const ROUTE_LABELS = {
     "/": { title: "N8N Dashboard", subtitle: "Overview of your workflows and metrics" },

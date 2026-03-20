@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @theme {
   --color-background: #f6f6f6;
@@ -13,7 +13,7 @@
     color: var(--c-text);
     margin: 0;
     padding: 0;
-    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -41,93 +41,93 @@
   }
 }
 
-/* CRM UI Kit Light Mode — Default and Only Theme */
+/* CRM UI Kit Light Mode — Premium B2B SaaS Theme */
 :root {
   /* Primary Colors */
-  --c-primary: #5e81f4;
-  --c-primary-dark: #1c1d21;
-  --c-primary-grey: #8181a5;
+  --c-primary: #4f46e5;
+  --c-primary-dark: #312e81;
+  --c-primary-grey: #6b7280;
 
   /* Background & Surfaces */
-  --c-bg: #f6f6f6;
+  --c-bg: #f8fafc;
   --c-surface: #ffffff;
-  --c-raised: #f5f5fa;
-  --c-hover: #f0f0f3;
-  --c-hover2: #ececf2;
+  --c-raised: #f1f5f9;
+  --c-hover: #f1f5f9;
+  --c-hover2: #e2e8f0;
 
   /* Borders & Outlines */
-  --c-border: #ececf2;
-  --c-border-sub: #f0f0f3;
-  --c-border-light: #f0f0f3;
-  --c-outline: #f0f0f3;
+  --c-border: #e2e8f0;
+  --c-border-sub: #f1f5f9;
+  --c-border-light: #f8fafc;
+  --c-outline: #e2e8f0;
   --c-outline-white: #ffffff;
 
   /* Text Colors */
-  --c-text: #1c1d21;
-  --c-text-dim: #5a5a7a;
-  --c-text-muted: #8181a5;
-  --c-text-subtle: #b0b0cc;
+  --c-text: #0f172a;
+  --c-text-dim: #334155;
+  --c-text-muted: #64748b;
+  --c-text-subtle: #94a3b8;
 
   /* Accent Colors (from palette) */
-  --c-accent: #5e81f4;
-  --c-accent-hover: #40e1fa;
-  --c-accent-pink: #ff808b;
-  --c-accent-cyan: #40e1fa;
-  --c-accent-green: #7ce7ac;
-  --c-accent-orange: #f4be5e;
+  --c-accent: #4f46e5;
+  --c-accent-hover: #4338ca;
+  --c-accent-pink: #f43f5e;
+  --c-accent-cyan: #06b6d4;
+  --c-accent-green: #10b981;
+  --c-accent-orange: #f59e0b;
 
   /* Status Colors */
-  --c-success: #7ce7ac;
-  --c-warning: #f4be5e;
-  --c-error: #ff808b;
-  --c-info: #40e1fa;
+  --c-success: #10b981;
+  --c-warning: #f59e0b;
+  --c-error: #ef4444;
+  --c-info: #3b82f6;
 }
 
 /* ─── Dark Mode Theme ─────────────────────────────────────────── */
 :root[data-theme="dark"],
 [data-theme="dark"] {
   /* Primary Colors */
-  --c-primary: #00d2d2;
-  --c-primary-dark: #0f1419;
-  --c-primary-grey: #6b7280;
+  --c-primary: #818cf8;
+  --c-primary-dark: #0f172a;
+  --c-primary-grey: #94a3b8;
 
   /* Background & Surfaces */
-  --c-bg: #0f1419;
-  --c-surface: #1a2232;
-  --c-raised: #1e2a3a;
-  --c-hover: #243044;
-  --c-hover2: #2a3650;
+  --c-bg: #0b0f19;
+  --c-surface: #111827;
+  --c-raised: #1f2937;
+  --c-hover: #1f2937;
+  --c-hover2: #374151;
 
   /* Borders & Outlines */
-  --c-border: #2a3650;
-  --c-border-sub: #243044;
-  --c-border-light: #243044;
-  --c-outline: #243044;
-  --c-outline-white: #1a2232;
+  --c-border: #334155;
+  --c-border-sub: #1e293b;
+  --c-border-light: #1e293b;
+  --c-outline: #334155;
+  --c-outline-white: #0b0f19;
 
   /* Text Colors */
-  --c-text: #e0e6f0;
-  --c-text-dim: #9aa5b8;
-  --c-text-muted: #6b7280;
-  --c-text-subtle: #4b5563;
+  --c-text: #f8fafc;
+  --c-text-dim: #cbd5e1;
+  --c-text-muted: #94a3b8;
+  --c-text-subtle: #64748b;
 
   /* Accent Colors */
-  --c-accent: #00d2d2;
-  --c-accent-hover: #00f0f0;
-  --c-accent-pink: #ff6b8a;
-  --c-accent-cyan: #00d2d2;
-  --c-accent-green: #5dd9a0;
-  --c-accent-orange: #f59e0b;
+  --c-accent: #818cf8;
+  --c-accent-hover: #6366f1;
+  --c-accent-pink: #fb7185;
+  --c-accent-cyan: #22d3ee;
+  --c-accent-green: #34d399;
+  --c-accent-orange: #fbbf24;
 
   /* Status Colors */
-  --c-success: #5dd9a0;
-  --c-warning: #f59e0b;
-  --c-error: #ff6b8a;
-  --c-info: #00d2d2;
+  --c-success: #34d399;
+  --c-warning: #fbbf24;
+  --c-error: #fb7185;
+  --c-info: #38bdf8;
 
   /* Tailwind color-background / color-foreground overrides */
-  --color-background: #0f1419;
-  --color-foreground: #e0e6f0;
+  --color-background: #0b0f19;
+  --color-foreground: #f8fafc;
 }
 
 /* Dark mode: show neon decorative elements */
@@ -160,7 +160,7 @@
 
 /* Buttons: Primary (CRM UI Kit style) */
 button, [role="button"] {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
 }
 
@@ -225,7 +225,7 @@ input[type="date"],
 input[type="number"],
 textarea,
 select {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: var(--c-surface);
   color: var(--c-text);
   border: 1px solid var(--c-border);
@@ -285,7 +285,7 @@ input[type="checkbox"]:disabled {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .tab-button:hover {
@@ -359,7 +359,7 @@ input[type="checkbox"]:disabled {
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .pagination-item:hover {

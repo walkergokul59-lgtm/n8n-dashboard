@@ -3,7 +3,7 @@ import { RefreshCw, CheckCircle2, Clock, AlertTriangle, ArrowUpDown, ArrowUp, Ar
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { getOrderSyncs } from '../utils/mock-data';
-import ChromaGrid from '../components/ChromaGrid';
+import ChromaGrid from '../components/ui/ChromaGrid';
 import { useDashboardData } from '../hooks/useDashboardData';
 
 function cn(...inputs) {

@@ -1,5 +1,5 @@
 import { Activity } from 'lucide-react';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardData } from '../../hooks/useDashboardData';
 
 export default function SystemHealth() {
     const { data } = useDashboardData(() => ({ ok: true, n8nLatencyMs: 45 }), '/dashboard/health');

@@ -2,10 +2,10 @@ import { useRef, useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import LightPillar from "./LightPillar";
-import { ScrollTrigger } from "../lib/gsap.js";
-import { useSmoothScroll } from "../hooks/useSmoothScroll";
-import { useSettings } from "../context/SettingsContext";
+import LightPillar from "../ui/LightPillar";
+import { ScrollTrigger } from "../../lib/gsap.js";
+import { useSmoothScroll } from "../../hooks/useSmoothScroll";
+import { useSettings } from "../../context/SettingsContext";
 
 export function Layout() {
     const location = useLocation();

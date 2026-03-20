@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { SettingsProvider } from "./context/SettingsContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/useAuth";
-import { Layout } from "./components/Layout";
+import { Layout } from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import SupportChat from "./pages/SupportChat";
 import InvoiceRuns from "./pages/InvoiceRuns";
@@ -11,7 +11,7 @@ import OrderSync from "./pages/OrderSync";
 import SmsOutreach from "./pages/SmsOutreach";
 import Settings from "./pages/Settings";
 import AdminSettings from "./pages/AdminSettings";
-import Preloader from "./components/Preloader";
+import Preloader from "./components/ui/Preloader";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import AdminPanel from "./pages/AdminPanel";
