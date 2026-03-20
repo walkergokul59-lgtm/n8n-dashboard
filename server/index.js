@@ -7,7 +7,8 @@ import { N8nClient } from './n8nClient.js';
 import { createApiRouter } from './apiRouter.js';
 
 const isProd = process.argv.includes('--prod');
-const preferredPort = Number(process.env.PORT || 5173);
+const preferredPort = Number(process.env.PORT || 5000);
+const serverHost = process.env.HOST || '0.0.0.0';
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -33,8 +34,8 @@ async function fileExists(filePath) {
   }
 }
 
-async function listenOnAvailablePort(server, startPort, maxAttempts = 20) {
-  let nextPort = Number(startPort) || 5173;
+async function listenOnAvailablePort(server, startPort, host = '0.0.0.0', maxAttempts = 20) {
+  let nextPort = Number(startPort) || 5000;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const result = await new Promise((resolve) => {
@@ -50,7 +51,7 @@ async function listenOnAvailablePort(server, startPort, maxAttempts = 20) {
 
       server.once('error', onError);
       server.once('listening', onListening);
-      server.listen(nextPort);
+      server.listen(nextPort, host);
     });
 
     if (result.ok) {
@@ -146,11 +147,11 @@ async function start() {
     });
   }
 
-  const boundPort = await listenOnAvailablePort(server, preferredPort);
+  const boundPort = await listenOnAvailablePort(server, preferredPort, serverHost);
   if (boundPort !== preferredPort) {
-    console.warn(`Port ${preferredPort} is in use. Switched to http://localhost:${boundPort}`);
+    console.warn(`Port ${preferredPort} is in use. Switched to http://${serverHost}:${boundPort}`);
   }
-  console.log(`Dashboard server listening on http://localhost:${boundPort} (${isProd ? 'prod' : 'dev'})`);
+  console.log(`Dashboard server listening on http://${serverHost}:${boundPort} (${isProd ? 'prod' : 'dev'})`);
 }
 
 start().catch((err) => {

@@ -36,21 +36,16 @@ export function loadEnv() {
   const n8nAuthType = (process.env.N8N_AUTH_TYPE?.trim() || 'bearer').toLowerCase(); // bearer | header
   const n8nHeaderName = (process.env.N8N_AUTH_HEADER?.trim() || 'X-N8N-API-KEY').trim();
 
-  if (!n8nBaseUrl) {
-    throw new Error('Missing env: N8N_BASE_URL (example: http://localhost:5678)');
-  }
-  if (!n8nToken) {
-    throw new Error('Missing env: N8N_API_TOKEN (your n8n API token)');
-  }
-  if (!['bearer', 'header'].includes(n8nAuthType)) {
+  if (n8nBaseUrl && !['bearer', 'header'].includes(n8nAuthType)) {
     throw new Error('Invalid env: N8N_AUTH_TYPE must be "bearer" or "header"');
   }
 
   return {
-    n8nBaseUrl: n8nBaseUrl.replace(/\/+$/, ''),
+    n8nBaseUrl: n8nBaseUrl ? n8nBaseUrl.replace(/\/+$/, '') : null,
     n8nApiBasePath,
-    n8nToken,
+    n8nToken: n8nToken || null,
     n8nAuthType,
     n8nHeaderName,
+    configured: !!(n8nBaseUrl && n8nToken),
   };
 }
