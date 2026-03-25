@@ -26,7 +26,7 @@ npm run preview  # Serve production build locally (requires npm run build first)
 
 ### Local Development (`.env`)
 
-Create `.env` in the root with n8n connection details and authentication settings:
+Create `.env` in the root with n8n connection details and authentication settings. See `.env.example` for a template:
 ```
 # Google Sheets Database (optional — falls back to disk/memory without this)
 GOOGLE_SERVICE_ACCOUNT_JSON=<base64-encoded service account JSON>
@@ -207,17 +207,25 @@ The app enforces **role-based access control (RBAC)** with two user roles:
 
 ### Authentication Methods
 
-The app supports two authentication flows:
+The app supports three authentication flows:
 
 **1. Email/Password Login** (`api/auth/login.js`, `server/apiRouter.js`)
-- Direct login with email and password
+- Direct login for existing users (admin or approved clients)
 - Test users (in-memory, reset on server restart):
   - Admin: `root@gmail.com` / `root`
-  - Client: `client1@gmail.com` / `client1`
+  - Pre-approved Client: `client1@gmail.com` / `client1`
 - Tokens stored in localStorage as `n8nDashboardAuthToken`
 
-**2. Password Reset** (`api/auth/reset-request.js`, `api/auth/reset-verify.js`, `api/auth/reset-password.js`)
-- User requests reset via email (sends reset code)
+**2. Client Self-Service Signup** (`api/auth/signup.js`)
+- New clients self-register via Sign Up tab on login page
+- Requires email, password, and client/organization name
+- New accounts created with `approvalStatus: 'pending'` (not yet accessible)
+- User is redirected to `/settings` to complete onboarding profile while awaiting admin approval
+- Admin reviews and approves/denies in `/admin` panel
+- Once approved, user can access dashboard and features based on their subscription tier
+
+**3. Password Reset** (`api/auth/reset-request.js`, `api/auth/reset-verify.js`, `api/auth/reset-password.js`)
+- User requests reset via "Forgot Password?" link
 - System generates time-limited reset code (6-digit, 10-minute expiry)
 - User verifies code and sets new password
 - Emails sent via Gmail SMTP (Nodemailer) — requires `GMAIL_USER` and `GMAIL_APP_PASSWORD`
@@ -226,6 +234,52 @@ The app supports two authentication flows:
 - Uses `api/_lib/resetCodes.js` for code generation and validation
 
 **Password Security**: All passwords are hashed with bcrypt (cost factor 10). Legacy plaintext passwords are automatically migrated to bcrypt on first successful login.
+
+### Subscription Tiers & Client Onboarding
+
+The app enforces **three subscription tiers** per client user:
+
+**Tier Features**:
+- **Free**: Up to 2 workflows, failures KPI, support chat
+- **Platinum**: Up to 2 workflows, failures KPI, support chat (same as Free)
+- **Gold**: Unlimited workflows, failures KPI, support chat, CSV export, invoice runs
+
+Each user has an `effectiveTier` property that gates access to tier-specific pages and features.
+
+**Client Onboarding Flow**:
+1. New clients self-register via `/login` → Sign Up tab with email, password, and organization name
+2. Backend creates user account with `approvalStatus: 'pending'` (dashboard inaccessible)
+3. New user is redirected to `/settings` to complete onboarding profile (name, company details)
+4. Admin reviews signup requests in `/admin` panel
+5. Admin approves (or rejects) the signup request
+6. Approved clients can now access dashboard; free users see upsell modal
+7. Admin can upgrade tier via `/admin` panel (Free → Platinum → Gold)
+
+**Default Test Users**:
+- **Admin**: `root@gmail.com` / `root` (full access, no tier restrictions)
+- **Pre-approved Client**: `client1@gmail.com` / `client1` (Free tier, pre-approved to save signup steps)
+
+**Free User Experience**:
+- On login, free users see an "upsell" modal highlighting Platinum vs Gold features
+- Users can dismiss and continue to dashboard, but tier-gated features remain locked
+- CSV export and invoice runs pages are hidden for free users
+
+**Testing Tier Features Locally**:
+
+To test tier gating without waiting for admin approval:
+
+1. Start the server: `npm run dev`
+2. Log in as `root` (admin)
+3. Go to `/admin` and edit a client user's tier:
+   - Set `effectiveTier` to `'free'`, `'platinum'`, or `'gold'`
+4. Log out and log back in with the client account
+5. Verify feature availability changes (CSV export, invoice runs pages visible only for Gold)
+
+Alternatively, edit `server/rbacStore.js` directly to set initial tier values for test users.
+
+**Persistence**:
+- Tier assignments are stored in RBAC store (in-memory in dev, Google Sheets / Vercel KV in production)
+- In local dev, restarting the server resets all tier data to defaults
 
 ### Support Chat
 
@@ -306,11 +360,19 @@ These functions handle the same logic as `server/` but in serverless context. Th
 
 1. **Start the server**: `npm run dev`
 2. **App opens** at `http://localhost:5173` → redirects to `/login` (auth required)
-3. **Login**:
-   - Admin: `root@gmail.com` / `root`
-   - Client: `client1@gmail.com` / `client1`
-4. **Navigate to `/settings`**: Choose n8n data source mode
-5. **For Admin tasks**: Navigate to `/admin` to manage users/clients/workflow allowlists
+3. **To test as a pre-approved client**:
+   - Email: `client1@gmail.com`, Password: `client1`
+   - User is already approved and in Free tier
+4. **To test as admin**:
+   - Email: `root@gmail.com`, Password: `root`
+   - Unlocks full access and `/admin` panel
+5. **To test new client signup**:
+   - Click "Sign Up" tab and register with new email
+   - You'll be redirected to `/settings` (account pending approval)
+   - Switch to admin account and go to `/admin` to approve the new user
+   - New user can then log in
+6. **Configure data source**: Navigate to `/settings` to choose n8n data source mode
+7. **Manage access**: Navigate to `/admin` to manage users, clients, workflows, and tiers
 
 ### Admin Panel (`/admin`)
 
@@ -323,15 +385,27 @@ Changes are stored in RBAC store (in-memory in dev, Vercel KV in production).
 
 ### Testing Different User Roles
 
-**Local testing**: Edit `server/rbacStore.js` or use the Admin panel to create test users/clients with specific workflow allowlists.
+**Local testing**: Use the Admin panel (`/admin`) to create test users, assign workflow allowlists, and set subscription tiers. Alternatively, edit `server/rbacStore.js` directly for quick setup.
 
-**Example**: To test a client with only workflow `123`:
+**Example: Test a client with limited workflows and Free tier**:
 1. Log in as `root` (admin)
 2. Go to `/admin`
-3. Ensure there's a client entry with `workflowIds: ['123']`
-4. Create a user with that `clientId` and role `client`
-5. Log out, then log in with the new client account
-6. Verify only workflow `123` appears in dashboard
+3. Create a new client entry with `workflowIds: ['123', '456']` (2 workflows)
+4. Create a user with that `clientId`, role `client`, and `effectiveTier: 'free'`
+5. Approve the user (`approvalStatus: 'approved'`)
+6. Log out and log in with the new client account
+7. Verify:
+   - Only workflows 123 and 456 appear in dashboard
+   - Free tier upsell modal appears on login
+   - CSV export and invoice runs pages are unavailable
+   - Support chat is available
+
+**Example: Test a client with unlimited workflows and Gold tier**:
+1. In `/admin`, create/edit a client with unlimited workflows
+2. Set `effectiveTier: 'gold'` on the user
+3. Log in with that account
+4. Verify CSV export and invoice runs are accessible
+5. No upsell modal should appear
 
 ### Testing in Different Data Modes
 

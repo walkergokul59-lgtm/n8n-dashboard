@@ -1,13 +1,13 @@
+/* UI redesign: fixed text-[10px] to text-[12px], replaced hardcoded grays/slate with CSS vars, consistent typography */
 import { useMemo } from 'react';
 import { Bot, User, Clock, DollarSign, Calendar } from 'lucide-react';
 import { getAIAgentLogs } from '../utils/mock-data';
-import { useDashboardData } from '../hooks/useDashboardData'; // Assuming this is the path for the custom hook
+import { useDashboardData } from '../hooks/useDashboardData';
 
 export default function AIAgentLogs() {
     const { data: logs, isLoading } = useDashboardData(getAIAgentLogs);
     const logsList = Array.isArray(logs) ? logs : [];
 
-    // Calculate summary stats
     const stats = useMemo(() => {
         if (!logsList.length) {
             return {
@@ -38,41 +38,41 @@ export default function AIAgentLogs() {
     return (
         <div className="space-y-6 pb-10">
             {/* Header & Stats Summary */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--c-raised)] p-6 rounded-xl border border-[var(--c-border-sub)] shadow-lg relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg-elevated)] p-6 rounded-[8px] border border-[var(--c-border)] shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--c-accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div>
-                    <h2 className="text-xl font-bold text-[var(--c-text)] mb-1">AI Agent Logs</h2>
-                    <p className="text-sm text-gray-400">Detailed interaction logs between users and AI agents</p>
+                    <h2 className="text-[20px] font-semibold text-[var(--c-text)] mb-1">AI Agent Logs</h2>
+                    <p className="text-[14px] text-[var(--c-text-muted)]">Detailed interaction logs between users and AI agents</p>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
-                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
-                        <div className="mr-3 p-1.5 bg-indigo-500/10 rounded-md text-indigo-400">
+                    <div className="bg-[var(--bg-surface)] px-4 py-2 rounded-[6px] border border-[var(--c-border)] flex items-center">
+                        <div className="mr-3 p-1.5 bg-[var(--c-accent)]/10 rounded-[4px] text-[var(--c-accent)]">
                             <Bot size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Conversations</p>
+                            <p className="text-[12px] text-[var(--c-text-subtle)] uppercase font-semibold tracking-wider">Conversations</p>
                             <p className="text-[var(--c-text)] font-semibold">{stats.totalConversations}</p>
                         </div>
                     </div>
 
-                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
-                        <div className="mr-3 p-1.5 bg-amber-500/10 rounded-md text-amber-400">
+                    <div className="bg-[var(--bg-surface)] px-4 py-2 rounded-[6px] border border-[var(--c-border)] flex items-center">
+                        <div className="mr-3 p-1.5 bg-[var(--c-warning)]/10 rounded-[4px] text-[var(--c-warning)]">
                             <Clock size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Duration</p>
+                            <p className="text-[12px] text-[var(--c-text-subtle)] uppercase font-semibold tracking-wider">Total Duration</p>
                             <p className="text-[var(--c-text)] font-semibold">{stats.totalDuration}ms</p>
                         </div>
                     </div>
 
-                    <div className="bg-[var(--c-surface)] px-4 py-2 rounded-lg border border-[var(--c-border-sub)] flex items-center">
-                        <div className="mr-3 p-1.5 bg-emerald-500/10 rounded-md text-emerald-400">
+                    <div className="bg-[var(--bg-surface)] px-4 py-2 rounded-[6px] border border-[var(--c-border)] flex items-center">
+                        <div className="mr-3 p-1.5 bg-[var(--c-success)]/10 rounded-[4px] text-[var(--c-success)]">
                             <DollarSign size={16} />
                         </div>
                         <div>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Cost</p>
+                            <p className="text-[12px] text-[var(--c-text-subtle)] uppercase font-semibold tracking-wider">Total Cost</p>
                             <p className="text-[var(--c-text)] font-semibold">${stats.totalCost}</p>
                         </div>
                     </div>
@@ -82,31 +82,31 @@ export default function AIAgentLogs() {
             {/* Conversation List */}
             <div className="space-y-6">
                 {isLoading && logsList.length === 0 ? (
-                    <div className="text-sm text-gray-400">Loading logs…</div>
+                    <div className="text-[14px] text-[var(--c-text-muted)]">Loading logs…</div>
                 ) : null}
 
                 {logsList.map((log) => (
-                    <div key={log.threadId} className="bg-[var(--c-raised)] rounded-xl border border-[var(--c-border-sub)] shadow-md overflow-hidden">
+                    <div key={log.threadId} className="bg-[var(--bg-elevated)] rounded-[8px] border border-[var(--c-border)] shadow-md overflow-hidden">
                         {/* Thread Header Metadata */}
-                        <div className="bg-[var(--c-surface)]/80 px-6 py-3 border-b border-[var(--c-border-sub)] flex flex-wrap items-center justify-between gap-4 text-xs">
-                            <div className="flex items-center text-gray-400 font-mono">
-                                <span className="text-gray-500 mr-2">THREAD ID</span>
-                                <span className="text-primary truncate max-w-[150px] sm:max-w-none" title={log.threadId}>
+                        <div className="bg-[var(--bg-surface)] px-6 py-3 border-b border-[var(--c-border)] flex flex-wrap items-center justify-between gap-4 text-[12px]">
+                            <div className="flex items-center text-[var(--c-text-muted)] font-mono">
+                                <span className="text-[var(--c-text-subtle)] mr-2">THREAD ID</span>
+                                <span className="text-[var(--c-accent)] truncate max-w-[150px] sm:max-w-none" title={log.threadId}>
                                     {log.threadId}
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-4 text-gray-400 font-medium">
+                            <div className="flex items-center gap-4 text-[var(--c-text-muted)] font-medium">
                                 <div className="flex items-center" title="Duration">
-                                    <Clock size={14} className="mr-1.5 text-amber-400" />
+                                    <Clock size={14} className="mr-1.5 text-[var(--c-warning)]" />
                                     {log.durationMs}ms
                                 </div>
                                 <div className="flex items-center" title="Cost">
-                                    <DollarSign size={14} className="mr-1.5 text-emerald-400" />
+                                    <DollarSign size={14} className="mr-1.5 text-[var(--c-success)]" />
                                     ${log.cost.toFixed(4)}
                                 </div>
                                 <div className="flex items-center" title="Timestamp">
-                                    <Calendar size={14} className="mr-1.5 text-indigo-400" />
+                                    <Calendar size={14} className="mr-1.5 text-[var(--c-accent)]" />
                                     {formatDate(log.timestamp)}
                                 </div>
                             </div>
@@ -116,12 +116,12 @@ export default function AIAgentLogs() {
                         <div className="p-6 space-y-6">
                             {/* User Message */}
                             <div className="flex items-start gap-4">
-                                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 shadow-sm">
-                                    <User size={16} className="text-slate-200" />
+                                <div className="w-8 h-8 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center shrink-0 border border-[var(--c-border)] shadow-sm">
+                                    <User size={16} className="text-[var(--c-text-dim)]" />
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="text-xs font-bold text-slate-400 mb-1 tracking-wide">USER</h4>
-                                    <div className="bg-[var(--c-surface)] border border-[var(--c-border-sub)] rounded-2xl rounded-tl-sm p-4 text-[var(--c-text-dim)] text-sm shadow-sm inline-block max-w-[85%] leading-relaxed">
+                                    <h4 className="text-[12px] font-semibold text-[var(--c-text-muted)] mb-1 tracking-wide">USER</h4>
+                                    <div className="bg-[var(--bg-surface)] border border-[var(--c-border)] rounded-2xl rounded-tl-sm p-4 text-[var(--c-text-dim)] text-[14px] shadow-sm inline-block max-w-[85%] leading-relaxed">
                                         {log.question}
                                     </div>
                                 </div>
@@ -129,12 +129,12 @@ export default function AIAgentLogs() {
 
                             {/* AI Agent Response */}
                             <div className="flex items-start gap-4 flex-row-reverse">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 shadow-sm shadow-primary/10">
-                                    <Bot size={16} className="text-primary" />
+                                <div className="w-8 h-8 rounded-full bg-[var(--c-accent)]/20 flex items-center justify-center shrink-0 border border-[var(--c-accent)]/30 shadow-sm">
+                                    <Bot size={16} className="text-[var(--c-accent)]" />
                                 </div>
                                 <div className="flex-1 flex flex-col items-end">
-                                    <h4 className="text-xs font-bold text-primary/80 mb-1 tracking-wide">AI AGENT</h4>
-                                    <div className="bg-primary/10 border border-primary/20 rounded-2xl rounded-tr-sm p-4 text-gray-100 text-sm shadow-sm inline-block max-w-[85%] text-left leading-relaxed">
+                                    <h4 className="text-[12px] font-semibold text-[var(--c-accent)]/80 mb-1 tracking-wide">AI AGENT</h4>
+                                    <div className="bg-[var(--c-accent)]/10 border border-[var(--c-accent)]/20 rounded-2xl rounded-tr-sm p-4 text-[var(--c-text)] text-[14px] shadow-sm inline-block max-w-[85%] text-left leading-relaxed">
                                         {log.response}
                                     </div>
                                 </div>

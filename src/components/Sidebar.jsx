@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded grays with CSS vars, standardized icon sizes 20px, fixed button heights, fixed sidebar width */
 import { NavLink } from "react-router-dom";
 import { Grid, File, MessageSquare, Settings, Shield } from "lucide-react";
 import { clsx } from "clsx";
@@ -25,13 +26,13 @@ export function Sidebar() {
     })();
 
     return (
-        <div className="relative z-10 w-[250px] min-h-screen bg-[var(--c-surface)] border-r border-[var(--c-border)] flex flex-col shrink-0">
+        <div className="relative z-10 w-[248px] min-h-screen bg-[var(--bg-surface)] border-r border-[var(--c-border)] flex flex-col shrink-0">
             {/* n8n Logo Area */}
             <div className="h-16 flex items-center px-6 border-b border-[var(--c-border)]">
-                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3 font-extrabold text-[var(--c-bg)] text-sm">
+                <div className="w-8 h-8 bg-[var(--c-accent)] rounded-[6px] flex items-center justify-center mr-3 font-bold text-[var(--c-bg)] text-[12px] tracking-tight">
                     n8n
                 </div>
-                <span className="font-semibold text-lg hover:text-primary transition-colors cursor-pointer">
+                <span className="font-semibold text-[16px] text-[var(--c-text)] hover:text-[var(--c-accent)] transition-colors cursor-pointer">
                     Dashboard
                 </span>
             </div>
@@ -44,19 +45,20 @@ export function Sidebar() {
                         to={item.path}
                         className={({ isActive }) =>
                             cn(
-                                "flex items-center px-4 py-3 rounded-md transition-all duration-200 group text-sm font-medium",
+                                "flex items-center px-4 py-2.5 rounded-[6px] transition-all duration-200 group text-[14px] font-medium",
                                 isActive
-                                    ? "bg-primary/10 text-primary"
-                                    : "text-gray-400 hover:bg-[var(--c-hover)] hover:text-[var(--c-text-dim)]"
+                                    ? "bg-[var(--c-accent)]/10 text-[var(--c-accent)]"
+                                    : "text-[var(--c-text-muted)] hover:bg-[var(--c-hover)] hover:text-[var(--c-text-dim)]"
                             )
                         }
                     >
                         {({ isActive }) => (
                             <>
                                 <item.icon
+                                    size={20}
                                     className={cn(
-                                        "mr-3 h-5 w-5 transition-colors",
-                                        isActive ? "text-primary/90" : "text-gray-400 group-hover:text-gray-300"
+                                        "mr-3 shrink-0 transition-colors",
+                                        isActive ? "text-[var(--c-accent)]" : "text-[var(--c-text-muted)] group-hover:text-[var(--c-text-dim)]"
                                     )}
                                 />
                                 {item.name}
@@ -71,12 +73,12 @@ export function Sidebar() {
                 <button
                     type="button"
                     onClick={logout}
-                    className="w-full py-2 rounded-md bg-[var(--c-hover)] border border-[var(--c-border)] text-xs text-[var(--c-text-dim)] hover:bg-[var(--c-hover2)]"
+                    className="w-full h-8 rounded-[6px] bg-[var(--c-hover)] border border-[var(--c-border)] text-[12px] font-medium text-[var(--c-text-dim)] hover:bg-[var(--c-hover2)] transition-colors"
                 >
                     Logout
                 </button>
-                <div className="text-xs text-gray-500 text-center">v2.0.0</div>
-                <div className="text-[10px] text-gray-500 text-center">A product of Mad Fusion</div>
+                <div className="text-[12px] text-[var(--c-text-muted)] text-center">v2.0.0</div>
+                <div className="text-[12px] text-[var(--c-text-subtle)] text-center">A product of Mad Fusion</div>
             </div>
         </div>
     );

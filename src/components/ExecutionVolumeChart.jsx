@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded hex (#6b7280) and rgba with CSS vars for chart grid/axis */
 import {
     AreaChart,
     Area,
@@ -14,9 +15,9 @@ import { Loader2 } from 'lucide-react';
 function CustomTooltipContent({ active, payload, label }) {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-[var(--c-hover)] border border-[var(--c-border-light)] p-3 rounded-lg shadow-xl">
-                <p className="text-gray-400 text-xs mb-1">{`Time: ${label}`}</p>
-                <p className="text-[var(--c-accent)] font-bold">
+            <div className="bg-[var(--bg-elevated)] border border-[var(--c-border)] p-3 rounded-[6px] shadow-xl">
+                <p className="text-[var(--c-text-muted)] text-[12px] mb-1">{`Time: ${label}`}</p>
+                <p className="text-[var(--c-accent)] font-semibold">
                     {`Requests: ${payload[0].value}`}
                 </p>
             </div>
@@ -30,7 +31,7 @@ function RenderLegendContent(props) {
     return (
         <div className="flex justify-end w-full mb-2">
             {payload.map((entry, index) => (
-                <div key={`item-${index}`} className="flex items-center text-sm text-gray-400">
+                <div key={`item-${index}`} className="flex items-center text-[14px] text-[var(--c-text-muted)]">
                     <span
                         className="w-2.5 h-2.5 rounded-full mr-2"
                         style={{ backgroundColor: entry.color }}
@@ -53,17 +54,17 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
         : [];
 
     return (
-        <div className="bg-[var(--c-raised)] rounded-xl p-6 shadow-lg border border-[var(--c-border-sub)] w-full lg:w-[60%] h-[350px] flex flex-col">
-            <h3 className="text-[var(--c-text)] font-semibold text-lg mb-6">Execution Volume</h3>
+        <div className="bg-[var(--bg-elevated)] rounded-[8px] p-6 shadow-lg border border-[var(--c-border)] w-full lg:w-[60%] h-[350px] flex flex-col">
+            <h3 className="text-[var(--c-text)] font-semibold text-[16px] mb-6">Execution Volume</h3>
 
             {isLoading ? (
                 <div className="flex-1 w-full h-full flex flex-col items-center justify-center min-h-[250px] opacity-50">
                     <Loader2 size={32} className="animate-spin text-[var(--c-accent)] mb-4" />
-                    <p className="text-gray-400 text-sm animate-pulse">Synchronizing cluster data...</p>
+                    <p className="text-[var(--c-text-muted)] text-[14px] animate-pulse">Synchronizing cluster data...</p>
                 </div>
             ) : !hasData ? (
                 <div className="flex-1 w-full h-full flex flex-col items-center justify-center min-h-[250px]">
-                    <p className="text-gray-400 text-sm">No execution volume data available right now.</p>
+                    <p className="text-[var(--c-text-muted)] text-[14px]">No execution volume data available right now.</p>
                 </div>
             ) : (
                 <div className="flex-1 w-full min-h-0">
@@ -80,29 +81,29 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                             </defs>
                             <CartesianGrid
                                 strokeDasharray="3 3"
-                                stroke="rgba(255,255,255,0.05)"
+                                stroke="var(--c-chart-grid)"
                                 vertical={false}
                             />
                             <XAxis
                                 dataKey="time"
-                                stroke="#6b7280"
+                                stroke="var(--c-chart-axis)"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
                                 dy={10}
                             />
                             <YAxis
-                                stroke="#6b7280"
+                                stroke="var(--c-chart-axis)"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
                                 domain={allZero ? [-1, 1] : [0, 'dataMax + 10']}
                                 tickCount={5}
                             />
-                            <Tooltip content={<CustomTooltipContent />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <Tooltip content={<CustomTooltipContent />} cursor={{ stroke: 'var(--c-chart-grid)', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Legend content={RenderLegendContent} verticalAlign="top" align="right" />
                             {allZero ? (
-                                <ReferenceLine y={0} stroke="rgba(255,255,255,0.35)" strokeDasharray="4 4" />
+                                <ReferenceLine y={0} stroke="var(--c-chart-axis)" strokeDasharray="4 4" />
                             ) : null}
                             <Area
                                 type="monotone"
@@ -112,7 +113,7 @@ export default function ExecutionVolumeChart({ data, isLoading }) {
                                 fillOpacity={1}
                                 fill="url(#colorRequests)"
                                 animationDuration={1000}
-                                activeDot={{ r: 6, fill: 'var(--c-raised)', stroke: 'var(--c-accent)', strokeWidth: 2 }}
+                                activeDot={{ r: 6, fill: 'var(--bg-elevated)', stroke: 'var(--c-accent)', strokeWidth: 2 }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>

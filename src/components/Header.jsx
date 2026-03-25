@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded grays with CSS vars, standardized icon sizes, consistent menu styling */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
@@ -166,29 +167,28 @@ export function Header() {
     }, [isUserMenuOpen]);
 
     return (
-        <header ref={rootRef} className="h-20 bg-[var(--c-bg)] border-b border-[var(--c-border)] flex flex-col justify-center px-8 shrink-0 relative overflow-visible">
+        <header ref={rootRef} className="h-16 bg-[var(--bg-base)] border-b border-[var(--c-border)] flex flex-col justify-center px-8 shrink-0 relative overflow-visible">
             {/* Decorative gradient orb */}
             <div className="dark-only absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             <div className="relative z-10 flex items-center justify-between">
                 <div>
-                    <h1 ref={titleRef} className="text-2xl font-bold tracking-tight text-[var(--c-text)] mb-1">
+                    <h1 ref={titleRef} className="text-[20px] font-semibold tracking-tight text-[var(--c-text)] leading-tight">
                         {currentRouteInfo.title}
                     </h1>
-                    <p ref={subtitleRef} className="text-sm text-gray-400">
+                    <p ref={subtitleRef} className="text-[13px] text-[var(--c-text-muted)] mt-0.5">
                         {currentRouteInfo.subtitle}
                     </p>
                 </div>
 
-                {/* Mock User Avatar */}
-                <div ref={actionsRef} className="flex items-center space-x-4 relative">
+                <div ref={actionsRef} className="flex items-center gap-3 relative">
                     <button
                         type="button"
                         onClick={toggleTheme}
                         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                        className="h-8 w-8 flex items-center justify-center rounded-md border border-[var(--c-border)] bg-[var(--c-hover)] hover:bg-[var(--c-hover2)] transition-colors text-gray-400 hover:text-[var(--c-text)]"
+                        className="h-8 w-8 flex items-center justify-center rounded-[6px] border border-[var(--c-border)] bg-[var(--c-hover)] hover:bg-[var(--c-hover2)] transition-colors text-[var(--c-text-muted)] hover:text-[var(--c-text)]"
                     >
-                        {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
                     <div className="relative">
                         <button
@@ -197,7 +197,7 @@ export function Header() {
                             onClick={() => setIsHelpMenuOpen((current) => !current)}
                             aria-expanded={isHelpMenuOpen}
                             aria-haspopup="menu"
-                            className="h-8 px-4 text-xs font-semibold bg-[var(--c-hover)] hover:bg-[var(--c-hover2)] rounded-md border border-[var(--c-border)] transition-colors text-[var(--c-text)]"
+                            className="h-8 px-3 text-[12px] font-semibold bg-[var(--c-hover)] hover:bg-[var(--c-hover2)] rounded-[6px] border border-[var(--c-border)] transition-colors text-[var(--c-text)]"
                         >
                             Help
                         </button>
@@ -211,7 +211,7 @@ export function Header() {
                         }}
                         aria-haspopup="menu"
                         aria-expanded={isUserMenuOpen}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#00a0a0] flex items-center justify-center font-bold text-[var(--c-bg)] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--c-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--c-bg)]"
+                        className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--c-accent)] to-[var(--c-accent-hover)] flex items-center justify-center font-semibold text-[var(--c-bg)] text-[14px] shadow-lg shadow-primary/20 cursor-pointer hover:scale-105 transition-transform overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--c-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--c-bg)]"
                     >
                         {showClientProfileImage ? (
                             <img
@@ -230,7 +230,7 @@ export function Header() {
                     <div
                         ref={helpMenuRef}
                         role="menu"
-                        className="fixed w-64 rounded-md border border-[var(--c-border)] bg-[var(--c-bg)] shadow-xl z-[9999] py-1"
+                        className="fixed w-64 rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] shadow-xl z-[9999] py-1"
                         style={{
                             top: `${helpMenuPosition.top}px`,
                             left: `${helpMenuPosition.left}px`,
@@ -241,7 +241,7 @@ export function Header() {
                             target="_blank"
                             rel="noreferrer"
                             role="menuitem"
-                            className="block px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            className="flex items-center h-9 px-3 text-[14px] text-[var(--c-text)] hover:bg-[var(--c-hover)]"
                             onClick={() => setIsHelpMenuOpen(false)}
                         >
                             WhatsApp Support
@@ -251,7 +251,7 @@ export function Header() {
                             target="_blank"
                             rel="noreferrer"
                             role="menuitem"
-                            className="block px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            className="flex items-center h-9 px-3 text-[14px] text-[var(--c-text)] hover:bg-[var(--c-hover)]"
                             onClick={() => setIsHelpMenuOpen(false)}
                         >
                             Email Support
@@ -259,7 +259,7 @@ export function Header() {
                         <button
                             type="button"
                             role="menuitem"
-                            className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            className="w-full text-left flex items-center h-9 px-3 text-[14px] text-[var(--c-text)] hover:bg-[var(--c-hover)]"
                             onClick={() => {
                                 setIsHelpMenuOpen(false);
                                 navigate("/support");
@@ -276,7 +276,7 @@ export function Header() {
                     <div
                         ref={userMenuRef}
                         role="menu"
-                        className="fixed w-52 rounded-md border border-[var(--c-border)] bg-[var(--c-bg)] shadow-xl z-[9999] py-1"
+                        className="fixed w-52 rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] shadow-xl z-[9999] py-1"
                         style={{
                             top: `${userMenuPosition.top}px`,
                             left: `${userMenuPosition.left}px`,
@@ -285,7 +285,7 @@ export function Header() {
                         <button
                             type="button"
                             role="menuitem"
-                            className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            className="w-full text-left flex items-center h-9 px-3 text-[14px] text-[var(--c-text)] hover:bg-[var(--c-hover)]"
                             onClick={() => {
                                 setIsUserMenuOpen(false);
                                 navigate("/settings");
@@ -296,7 +296,7 @@ export function Header() {
                         <button
                             type="button"
                             role="menuitem"
-                            className="w-full text-left px-3 py-2 text-sm text-[var(--c-text)] hover:bg-[var(--c-hover2)]"
+                            className="w-full text-left flex items-center h-9 px-3 text-[14px] text-[var(--c-text)] hover:bg-[var(--c-hover)]"
                             onClick={() => {
                                 setIsUserMenuOpen(false);
                                 logout();

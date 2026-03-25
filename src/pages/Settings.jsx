@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded grays with CSS vars, standardized input heights 36px, consistent typography */
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, ImagePlus, Save } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -265,43 +266,45 @@ export default function Settings() {
         }
     };
 
+    const inputClass = "w-full rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-elevated)] px-3 h-9 text-[14px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)] focus:ring-2 focus:ring-[var(--c-accent)]/20";
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10">
             {showOnboardingIntro ? (
-                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3">
-                    <h2 className="text-sm font-semibold text-cyan-200">Onboarding Required</h2>
-                    <p className="text-xs text-cyan-100/80">
+                <div className="rounded-[8px] border border-[var(--c-info)]/20 bg-[var(--c-info-bg)] px-4 py-3">
+                    <h2 className="text-[14px] font-semibold text-[var(--c-info-text)]">Onboarding Required</h2>
+                    <p className="text-[13px] text-[var(--c-info-text)]/80">
                         Complete and save your profile details. Root admin approval is required before dashboard access is enabled.
                     </p>
                 </div>
             ) : null}
 
-            <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/70 overflow-hidden">
-                <div className="border-b border-[var(--c-border-light)] px-6 py-5">
-                    <h3 className="text-lg font-bold text-[var(--c-text)]">Client Profile Details</h3>
-                    <p className="text-sm text-gray-400">All fields below are mandatory. Saved profile image appears in the top-right header.</p>
+            <div className="rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] overflow-hidden">
+                <div className="border-b border-[var(--c-border)] px-6 py-5">
+                    <h3 className="text-[16px] font-semibold text-[var(--c-text)]">Client Profile Details</h3>
+                    <p className="text-[14px] text-[var(--c-text-muted)]">All fields below are mandatory. Saved profile image appears in the top-right header.</p>
                 </div>
 
                 {isProfileLoading ? (
-                    <div className="p-6 text-sm text-gray-400">Loading onboarding profile...</div>
+                    <div className="p-6 text-[14px] text-[var(--c-text-muted)]">Loading onboarding profile...</div>
                 ) : (
                 <form onSubmit={handleSubmit} className="space-y-6 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Client Name *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Client Name *</span>
                             <input
                                 type="text"
                                 name="clientName"
                                 required
                                 value={normalizedFormData.clientName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="Enter client name"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Country Code (default +91 India) *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Country Code (default +91 India) *</span>
                             <input
                                 type="text"
                                 name="contactCountryCode"
@@ -311,13 +314,13 @@ export default function Settings() {
                                 maxLength={5}
                                 value={normalizedFormData.contactCountryCode}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="+91"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Contact Number (10 digits) *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Contact Number (10 digits) *</span>
                             <input
                                 type="text"
                                 name="contactNumber"
@@ -327,79 +330,79 @@ export default function Settings() {
                                 maxLength={10}
                                 value={normalizedFormData.contactNumber}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="10-digit number"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Business Name *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Business Name *</span>
                             <input
                                 type="text"
                                 name="businessName"
                                 required
                                 value={normalizedFormData.businessName}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="Enter business name"
                             />
                         </label>
 
                         <label className="space-y-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Primary Email *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Primary Email *</span>
                             <input
                                 type="email"
                                 name="primaryEmail"
                                 required
                                 value={normalizedFormData.primaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="primary@business.com"
                             />
                         </label>
 
                         <label className="space-y-2 md:col-span-2">
-                            <span className="text-sm font-medium text-[var(--c-text-dim)]">Secondary Email *</span>
+                            <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Secondary Email *</span>
                             <input
                                 type="email"
                                 name="secondaryEmail"
                                 required
                                 value={normalizedFormData.secondaryEmail}
                                 onChange={handleInputChange}
-                                className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                className={inputClass}
                                 placeholder="support@business.com"
                             />
                         </label>
                     </div>
 
-                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] p-4">
+                    <div className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] p-4">
                         <div className="flex flex-wrap items-center gap-4">
-                            <div className="w-16 h-16 rounded-full overflow-hidden border border-white/20 bg-[var(--c-hover)] flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full overflow-hidden border border-[var(--c-border)] bg-[var(--bg-elevated)] flex items-center justify-center">
                                 {normalizedFormData.profileImage ? (
                                     <img src={normalizedFormData.profileImage} alt="Client profile" className="h-full w-full object-cover" />
                                 ) : (
-                                    <ImagePlus size={20} className="text-gray-400" />
+                                    <ImagePlus size={20} className="text-[var(--c-text-muted)]" />
                                 )}
                             </div>
 
                             <label className="space-y-2 flex-1 min-w-[240px]">
-                                <span className="text-sm font-medium text-[var(--c-text-dim)]">Profile Image *</span>
+                                <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Profile Image *</span>
                                 <input
                                     type="file"
                                     accept="image/png,image/jpeg"
                                     onChange={handleImageChange}
                                     required={!normalizedFormData.profileImage}
-                                    className="block w-full cursor-pointer rounded-lg border border-[var(--c-border-light)] bg-[var(--c-surface)] px-3 py-2 text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--c-accent)]"
+                                    className="block w-full cursor-pointer rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-surface)] px-3 py-2 text-[14px] text-[var(--c-text-dim)] file:mr-3 file:rounded-[4px] file:border-0 file:bg-[var(--c-accent)]/20 file:px-3 file:py-1.5 file:text-[12px] file:font-semibold file:text-[var(--c-accent)]"
                                 />
                             </label>
                         </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs text-gray-500">Mandatory fields are marked with *</p>
+                        <p className="text-[12px] text-[var(--c-text-subtle)]">Mandatory fields are marked with *</p>
                         <button
                             type="submit"
-                            className="inline-flex items-center rounded-lg bg-[var(--c-accent)] px-4 py-2 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center rounded-[6px] bg-[var(--c-accent)] px-4 h-9 text-[14px] font-semibold text-white transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={!isFormValid || isSaving || isProfileLoading}
                         >
                             <Save size={16} className="mr-2" />
@@ -408,7 +411,7 @@ export default function Settings() {
                     </div>
 
                     {statusMessage && (
-                        <p className="text-sm text-[var(--c-accent)]">{statusMessage}</p>
+                        <p className="text-[14px] text-[var(--c-accent)]">{statusMessage}</p>
                     )}
                 </form>
                 )}

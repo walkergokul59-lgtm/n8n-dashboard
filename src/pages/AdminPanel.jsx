@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded colors with CSS vars, standardized input/button heights, consistent typography */
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/useAuth';
 
@@ -38,35 +39,35 @@ function WorkflowMultiSelectDropdown({
             <button
                 type="button"
                 onClick={onToggleOpen}
-                className="w-full text-left bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-3 py-2 text-sm text-[var(--c-text)] hover:border-[var(--c-accent)]/60 transition-colors"
+                className="w-full text-left bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-3 h-9 flex items-center text-[14px] text-[var(--c-text)] hover:border-[var(--c-accent)] transition-colors"
             >
                 {selectedSet.size > 0 ? `${selectedSet.size} workflow(s) selected` : 'Select workflows'}
             </button>
 
             {isOpen ? (
-                <div className="absolute z-30 mt-2 w-full bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded-lg shadow-xl">
-                    <div className="p-2 border-b border-[var(--c-border-light)]">
+                <div className="absolute z-30 mt-2 w-full bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[8px] shadow-xl">
+                    <div className="p-2 border-b border-[var(--c-border)]">
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(event) => onSearchChange(event.target.value)}
                             placeholder="Search workflows"
-                            className="w-full bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="w-full bg-[var(--bg-surface)] border border-[var(--c-border)] rounded-[6px] px-2 h-8 text-[13px] text-[var(--c-text)]"
                         />
                     </div>
 
-                    <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--c-border-light)]">
+                    <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--c-border)]">
                         <button
                             type="button"
                             onClick={onSelectAllVisible}
-                            className="text-xs text-[var(--c-accent)] hover:text-[var(--c-accent-hover)]"
+                            className="text-[12px] text-[var(--c-accent)] hover:underline"
                         >
                             Select visible
                         </button>
                         <button
                             type="button"
                             onClick={onClearAll}
-                            className="text-xs text-rose-300 hover:text-rose-200"
+                            className="text-[12px] text-[var(--c-error-text)] hover:underline"
                         >
                             Clear
                         </button>
@@ -74,13 +75,13 @@ function WorkflowMultiSelectDropdown({
 
                     <div className="max-h-56 overflow-auto p-2 space-y-1">
                         {filteredWorkflows.length === 0 ? (
-                            <p className="text-xs text-gray-500 px-1 py-2">No workflows match search.</p>
+                            <p className="text-[12px] text-[var(--c-text-muted)] px-1 py-2">No workflows match search.</p>
                         ) : (
                             filteredWorkflows.map((workflow) => {
                                 const workflowId = String(workflow.id);
                                 const selected = selectedSet.has(workflowId);
                                 return (
-                                    <label key={workflowId} className="flex items-center gap-2 text-sm text-[var(--c-text-dim)] px-1 py-1 rounded hover:bg-white/5">
+                                    <label key={workflowId} className="flex items-center gap-2 text-[13px] text-[var(--c-text-dim)] px-1 py-1 rounded hover:bg-[var(--c-overlay-hover)]">
                                         <input
                                             type="checkbox"
                                             checked={selected}
@@ -220,39 +221,39 @@ export default function AdminPanel() {
     };
 
     if (isLoading) {
-        return <div className="text-gray-300">Loading admin panel...</div>;
+        return <div className="text-[var(--c-text-muted)] text-[14px]">Loading admin panel...</div>;
     }
 
     return (
         <div className="space-y-6 pb-10">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-[var(--c-text)]">Admin Panel</h2>
-                    <p className="text-sm text-gray-400">Manage users, roles, clients, and workflow access.</p>
+                    <h2 className="text-[20px] font-semibold text-[var(--c-text)]">Admin Panel</h2>
+                    <p className="text-[14px] text-[var(--c-text-muted)]">Manage users, roles, clients, and workflow access.</p>
                 </div>
                 <button
                     type="button"
                     onClick={saveAll}
                     disabled={isSaving}
-                    className="px-4 py-2 rounded-lg bg-[var(--c-accent)] text-[var(--c-bg)] font-semibold disabled:opacity-70"
+                    className="h-9 px-4 rounded-[6px] bg-[var(--c-accent)] text-[var(--c-bg)] text-[14px] font-semibold disabled:opacity-70"
                 >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
             </div>
 
-            {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-            {saveMessage ? <p className="text-sm text-emerald-400">{saveMessage}</p> : null}
-            <p className="text-sm text-amber-300">Pending client approvals: {pendingApprovalsCount}</p>
+            {error ? <p className="text-[13px] text-[var(--c-error-text)]">{error}</p> : null}
+            {saveMessage ? <p className="text-[13px] text-[var(--c-success-text)]">{saveMessage}</p> : null}
+            <p className="text-[13px] text-[var(--c-warning-text)]">Pending client approvals: {pendingApprovalsCount}</p>
 
-            <section className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-xl p-5 space-y-4">
+            <section className="bg-[var(--bg-elevated)] border border-[var(--c-border)] rounded-[8px] p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-[var(--c-text)] font-semibold">Users</h3>
-                    <button type="button" onClick={addUser} className="text-xs px-3 py-1 rounded bg-white/10 text-[var(--c-text-dim)]">
+                    <h3 className="text-[var(--c-text)] text-[16px] font-semibold">Users</h3>
+                    <button type="button" onClick={addUser} className="text-[12px] h-8 px-3 rounded-[6px] bg-[var(--c-hover)] border border-[var(--c-border)] text-[var(--c-text-dim)]">
                         Add User
                     </button>
                 </div>
                 {users.map((user, index) => (
-                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-3">
+                    <div key={user.id || index} className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-[var(--bg-surface)] border border-[var(--c-border)] rounded-[8px] p-3">
                         <input
                             type="email"
                             value={user.email || ''}
@@ -262,7 +263,7 @@ export default function AdminPanel() {
                                 setUsers(next);
                             }}
                             placeholder="email"
-                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                         />
                         <input
                             type="text"
@@ -273,7 +274,7 @@ export default function AdminPanel() {
                                 setUsers(next);
                             }}
                             placeholder="password"
-                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                         />
                         <select
                             value={user.role || 'client'}
@@ -282,7 +283,7 @@ export default function AdminPanel() {
                                 next[index] = { ...next[index], role: event.target.value };
                                 setUsers(next);
                             }}
-                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                         >
                             {roleOptions().map((role) => (
                                 <option key={role} value={role}>{role}</option>
@@ -295,7 +296,7 @@ export default function AdminPanel() {
                                 next[index] = { ...next[index], clientId: event.target.value };
                                 setUsers(next);
                             }}
-                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                             disabled={user.role === 'admin'}
                         >
                             <option value="">No client</option>
@@ -310,7 +311,7 @@ export default function AdminPanel() {
                                 next[index] = { ...next[index], approvalStatus: event.target.value };
                                 setUsers(next);
                             }}
-                            className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                            className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                             disabled={user.role === 'admin'}
                         >
                             {approvalStatusOptions().map((status) => (
@@ -320,7 +321,7 @@ export default function AdminPanel() {
                         <button
                             type="button"
                             onClick={() => setUsers((prev) => prev.filter((_, i) => i !== index))}
-                            className="bg-rose-500/20 text-rose-300 rounded px-2 py-1.5 text-sm"
+                            className="bg-[var(--c-error-bg)] text-[var(--c-error-text)] rounded-[6px] h-9 px-2 text-[13px] font-medium"
                         >
                             Remove
                         </button>
@@ -328,16 +329,16 @@ export default function AdminPanel() {
                 ))}
             </section>
 
-            <section className="bg-[var(--c-raised)] border border-[var(--c-border-light)] rounded-xl p-5 space-y-4">
+            <section className="bg-[var(--bg-elevated)] border border-[var(--c-border)] rounded-[8px] p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-[var(--c-text)] font-semibold">Clients</h3>
-                    <button type="button" onClick={addClient} className="text-xs px-3 py-1 rounded bg-white/10 text-[var(--c-text-dim)]">
+                    <h3 className="text-[var(--c-text)] text-[16px] font-semibold">Clients</h3>
+                    <button type="button" onClick={addClient} className="text-[12px] h-8 px-3 rounded-[6px] bg-[var(--c-hover)] border border-[var(--c-border)] text-[var(--c-text-dim)]">
                         Add Client
                     </button>
                 </div>
 
                 {clients.map((client, clientIndex) => (
-                    <div key={client.id} className="bg-[var(--c-surface)] border border-[var(--c-border-light)] rounded-lg p-4 space-y-3">
+                    <div key={client.id} className="bg-[var(--bg-surface)] border border-[var(--c-border)] rounded-[8px] p-4 space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <input
                                 type="text"
@@ -348,7 +349,7 @@ export default function AdminPanel() {
                                     setClients(next);
                                 }}
                                 placeholder="client id"
-                                className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                                className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                             />
                             <input
                                 type="text"
@@ -359,12 +360,12 @@ export default function AdminPanel() {
                                     setClients(next);
                                 }}
                                 placeholder="client name"
-                                className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                                className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                             />
                             <button
                                 type="button"
                                 onClick={() => setClients((prev) => prev.filter((_, i) => i !== clientIndex))}
-                                className="bg-rose-500/20 text-rose-300 rounded px-2 py-1.5 text-sm"
+                                className="bg-[var(--c-error-bg)] text-[var(--c-error-text)] rounded-[6px] h-9 px-2 text-[13px] font-medium"
                             >
                                 Remove Client
                             </button>
@@ -372,7 +373,7 @@ export default function AdminPanel() {
 
                         <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex flex-col gap-1">
-                                <p className="text-xs uppercase tracking-wider text-gray-400">Subscription Tier</p>
+                                <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-muted)]">Subscription Tier</p>
                                 <select
                                     value={client.tier || 'free'}
                                     onChange={(event) => {
@@ -382,7 +383,7 @@ export default function AdminPanel() {
                                             tierSetAt: newTier !== 'free' ? new Date().toISOString() : null,
                                         });
                                     }}
-                                    className="bg-[var(--c-bg)] border border-[var(--c-border-light)] rounded px-2 py-1.5 text-sm text-[var(--c-text)]"
+                                    className="bg-[var(--bg-base)] border border-[var(--c-border)] rounded-[6px] px-2 h-9 text-[13px] text-[var(--c-text)]"
                                 >
                                     <option value="free">Free</option>
                                     <option value="platinum">Platinum</option>
@@ -390,16 +391,16 @@ export default function AdminPanel() {
                                 </select>
                             </div>
                             {client.tier && client.tier !== 'free' && client.tierSetAt && (
-                                <p className="text-xs text-amber-300 self-end pb-1.5">
+                                <p className="text-[12px] text-[var(--c-warning-text)] self-end pb-1.5">
                                     Expires: {new Date(new Date(client.tierSetAt).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                                 </p>
                             )}
                         </div>
 
                         <div>
-                            <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">Allowed Workflows</p>
+                            <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-muted)] mb-2">Allowed Workflows</p>
                             {workflows.length === 0 ? (
-                                <p className="text-sm text-gray-500">No workflows discovered yet.</p>
+                                <p className="text-[14px] text-[var(--c-text-muted)]">No workflows discovered yet.</p>
                             ) : (
                                 <WorkflowMultiSelectDropdown
                                     workflows={workflows}

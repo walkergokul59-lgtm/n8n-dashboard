@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded colors with CSS vars, fixed icon sizes to 16px inline, standardized card radius to 8px, consistent typography */
 import { Zap, CalendarDays, CheckCircle2, Clock, RefreshCw, ChevronDown, Download } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CountUpModule from 'react-countup';
@@ -56,19 +57,19 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", icon, iconC
 
     return (
         <div className={cn(
-            "bg-[var(--c-raised)] rounded-xl p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group",
+            "bg-[var(--bg-elevated)] rounded-[8px] p-6 flex flex-col justify-between border-l-2 shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group",
             borderColor
         )}>
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
             <div className="flex items-center justify-between mb-4 z-20">
-                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">{title}</h3>
-                <div className={cn("p-2 rounded-full bg-opacity-20", iconColor.replace('text-', 'bg-'))}>
-                    <MetricIcon size={18} className={iconColor} />
+                <h3 className="text-[12px] font-medium text-[var(--c-text-muted)] uppercase tracking-wider">{title}</h3>
+                <div className={cn("p-2 rounded-[6px] flex items-center justify-center", iconColor.replace('text-', 'bg-').split(' ')[0] + '/10')}>
+                    <MetricIcon size={16} className={iconColor} />
                 </div>
             </div>
             <div className="flex flex-col z-20">
-                <div className="text-3xl font-bold text-[var(--c-text)] mb-2">
-                    {isCurrency && <span className="text-xl mr-1">$</span>}
+                <div className="text-[24px] font-semibold text-[var(--c-text)] mb-2">
+                    {isCurrency && <span className="text-[16px] mr-1">$</span>}
                     {canAnimate ? (
                         <CountUp
                             end={numericValue}
@@ -80,7 +81,7 @@ const MetricCard = ({ title, value, isCurrency = false, suffix = "", icon, iconC
                     ) : (
                         <span>{String(value ?? "-")}</span>
                     )}
-                    {suffix && <span className="text-xl ml-1">{suffix}</span>}
+                    {suffix && <span className="text-[16px] ml-1">{suffix}</span>}
                 </div>
             </div>
         </div>
@@ -375,24 +376,24 @@ export default function Dashboard() {
             title: "MONTHLY EXECUTIONS",
             value: isRangeLoading ? "-" : rangeCount,
             icon: CalendarDays,
-            iconColor: "text-emerald-400",
-            borderColor: "border-l-emerald-400",
+            iconColor: "text-[var(--c-success)]",
+            borderColor: "border-l-[var(--c-success)]",
         },
         {
             title: "SUCCESS RATE",
             value: isLoading ? "-" : Math.max(0, Math.min(100, Math.round(100 - Number(data?.errorRate || 0)))),
             suffix: "%",
             icon: CheckCircle2,
-            iconColor: "text-emerald-400",
-            borderColor: "border-l-emerald-400",
+            iconColor: "text-[var(--c-success)]",
+            borderColor: "border-l-[var(--c-success)]",
         },
         {
             title: "AVG DURATION",
             value: isLoading ? "-" : data?.averageDuration || 0,
             suffix: "ms",
             icon: Clock,
-            iconColor: "text-amber-400",
-            borderColor: "border-l-amber-400",
+            iconColor: "text-[var(--c-warning)]",
+            borderColor: "border-l-[var(--c-warning)]",
         }
     ];
 
@@ -400,21 +401,21 @@ export default function Dashboard() {
         <div ref={rootRef} className="space-y-6 relative">
             {/* Background Sync Indicator */}
             {isRefetching && (
-                <div data-gsap="parallax" className="absolute top-0 right-0 -mt-10 flex items-center text-xs font-semibold text-primary/70 bg-primary/10 px-3 py-1.5 rounded-full z-20">
+                <div data-gsap="parallax" className="absolute top-0 right-0 -mt-10 flex items-center text-[12px] font-semibold text-[var(--c-accent)] bg-[var(--c-accent)]/10 px-3 py-1.5 rounded-full z-20">
                     <RefreshCw size={12} className="mr-2 animate-spin" />
                     REFRESHING
                 </div>
             )}
 
-            <div data-gsap="reveal" className="relative z-[70] rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 p-4">
+            <div data-gsap="reveal" className="relative z-[70] rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] p-4">
                 <div className="flex flex-wrap items-end gap-4">
                         <div ref={workflowPickerRef} className="relative z-[2000]">
                             <label className="flex flex-col gap-1">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Workflows</span>
+                                <span className="text-[12px] font-medium uppercase tracking-wide text-[var(--c-text-muted)]">Workflows</span>
                                 <button
                                     type="button"
                                     onClick={() => setIsWorkflowPickerOpen((current) => !current)}
-                                    className="inline-flex min-w-[220px] items-center justify-between rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none hover:border-[var(--c-accent)]/80"
+                                    className="inline-flex min-w-[220px] items-center justify-between rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 h-9 text-[14px] text-[var(--c-text)] outline-none hover:border-[var(--c-accent)]"
                                 >
                                     <span className="truncate">
                                         {selectedWorkflowId
@@ -428,23 +429,23 @@ export default function Dashboard() {
                         {isWorkflowPickerOpen ? (
                             <div
                                 ref={workflowMenuRef}
-                                className="absolute left-0 top-full mt-2 z-[3000] w-[min(420px,90vw)] rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] shadow-xl"
+                                className="absolute left-0 top-full mt-2 z-[3000] w-[min(420px,90vw)] rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-base)] shadow-xl"
                             >
-                                <div className="border-b border-[var(--c-border-light)] p-2">
+                                <div className="border-b border-[var(--c-border)] p-2">
                                     <input
                                         type="text"
                                         value={workflowSearch}
                                         onChange={(event) => setWorkflowSearch(event.target.value)}
                                         placeholder="Search by workflow name or id"
-                                        className="w-full rounded-md border border-[var(--c-border-light)] bg-[var(--c-surface)] px-2 py-1.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                        className="w-full rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-surface)] px-2 h-8 text-[13px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]"
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-end border-b border-[var(--c-border-light)] px-2 py-1.5">
+                                <div className="flex items-center justify-end border-b border-[var(--c-border)] px-2 py-1.5">
                                     <button
                                         type="button"
                                         onClick={clearWorkflowSelection}
-                                        className="text-xs text-rose-300 hover:text-rose-200"
+                                        className="text-[12px] text-[var(--c-error-text)] hover:underline"
                                     >
                                         Clear
                                     </button>
@@ -452,15 +453,15 @@ export default function Dashboard() {
 
                                 <div className="max-h-64 overflow-auto p-2 space-y-1">
                                     {workflowsPayload.isLoading ? (
-                                        <p className="px-1 py-2 text-xs text-gray-500">Loading workflows...</p>
+                                        <p className="px-1 py-2 text-[12px] text-[var(--c-text-muted)]">Loading workflows...</p>
                                     ) : filteredWorkflows.length === 0 ? (
-                                        <p className="px-1 py-2 text-xs text-gray-500">No workflows found.</p>
+                                        <p className="px-1 py-2 text-[12px] text-[var(--c-text-muted)]">No workflows found.</p>
                                     ) : (
                                         filteredWorkflows.map((workflow) => {
                                             const workflowId = String(workflow.id);
                                             const checked = String(selectedWorkflowId) === workflowId;
                                             return (
-                                                <label key={workflowId} className="flex items-center gap-2 rounded px-1 py-1 text-sm text-[var(--c-text-dim)] hover:bg-white/5">
+                                                <label key={workflowId} className="flex items-center gap-2 rounded px-1 py-1 text-[13px] text-[var(--c-text-dim)] hover:bg-[var(--c-overlay-hover)]">
                                                     <input
                                                         type="radio"
                                                         name="workflow-selection"
@@ -478,25 +479,25 @@ export default function Dashboard() {
                     </div>
 
                     <label className="flex flex-col gap-1">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">From</span>
+                        <span className="text-[12px] font-medium uppercase tracking-wide text-[var(--c-text-muted)]">From</span>
                         <input
                             type="date"
                             value={executionRange.from}
                             max={executionRange.to}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, from: event.target.value }))}
-                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                            className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 h-9 text-[14px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]"
                         />
                     </label>
 
                     <label className="flex flex-col gap-1">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">To</span>
+                        <span className="text-[12px] font-medium uppercase tracking-wide text-[var(--c-text-muted)]">To</span>
                         <input
                             type="date"
                             value={executionRange.to}
                             max={formatDateInput(new Date())}
                             min={executionRange.from}
                             onChange={(event) => setExecutionRange((prev) => ({ ...prev, to: event.target.value }))}
-                            className="rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                            className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 h-9 text-[14px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]"
                         />
                     </label>
 
@@ -504,7 +505,7 @@ export default function Dashboard() {
                         type="button"
                         onClick={handleManualRefresh}
                         disabled={isRefetching || isRangeLoading}
-                        className="inline-flex items-center rounded-md border border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10 px-4 py-2 text-sm font-semibold text-[var(--c-accent)] transition hover:bg-[var(--c-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center rounded-[6px] border border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10 px-4 h-9 text-[14px] font-medium text-[var(--c-accent)] transition hover:bg-[var(--c-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <RefreshCw size={14} className={`mr-2 ${(isRefetching || isRangeLoading) ? "animate-spin" : ""}`} />
                         Refresh Data
@@ -516,21 +517,21 @@ export default function Dashboard() {
                             onClick={handleExportExcel}
                             disabled={!canExport}
                             title={!canExport ? exportDisabledReason : "Export dashboard metrics to Excel"}
-                            className="inline-flex items-center rounded-md border border-[var(--c-border-light)] bg-[var(--c-bg)] px-4 py-2 text-sm font-semibold text-[var(--c-text)] transition hover:border-[var(--c-accent)]/80 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-4 h-9 text-[14px] font-medium text-[var(--c-text)] transition hover:border-[var(--c-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Download size={14} className={`mr-2 ${isExporting ? "animate-pulse" : ""}`} />
                             {isExporting ? "Exporting..." : "Export Excel (CSV)"}
                         </button>
                     )}
 
-                    <p className={`text-sm ${rangeError ? "text-rose-400" : "text-gray-400"}`}>
+                    <p className={`text-[13px] ${rangeError ? "text-[var(--c-error-text)]" : "text-[var(--c-text-muted)]"}`}>
                         {rangeSummary} {selectedWorkflowId ? `| Filtered to workflow ${selectedWorkflowId}` : "| Using all workflows"}
                     </p>
                 </div>
             </div>
 
             {loadError ? (
-                <div className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                <div className="rounded-[6px] border border-[var(--c-error)]/30 bg-[var(--c-error-bg)] px-3 py-2 text-[14px] text-[var(--c-error-text)]">
                     {loadError.message || "Failed to load dashboard data. Click Refresh Data to retry."}
                 </div>
             ) : null}
@@ -549,7 +550,7 @@ export default function Dashboard() {
                             <MetricCard {...metric} />
                         </div>
                         <div
-                            className="absolute inset-0 pointer-events-none transition-opacity duration-500 z-20 opacity-0 group-hover:opacity-100 rounded-xl"
+                            className="absolute inset-0 pointer-events-none transition-opacity duration-500 z-20 opacity-0 group-hover:opacity-100 rounded-[8px]"
                             style={{
                                 background: 'radial-gradient(circle 250px at var(--mouse-x, 0) var(--mouse-y, 0), var(--spotlight-color), transparent 80%)'
                             }}

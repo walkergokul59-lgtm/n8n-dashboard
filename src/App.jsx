@@ -33,9 +33,9 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', background: '#222', color: 'red', height: '100vh', width: '100vw' }}>
+        <div style={{ padding: '20px', background: 'var(--bg-base)', color: 'var(--c-error)', height: '100vh', width: '100vw' }}>
           <h2>Something went wrong.</h2>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
+          <details style={{ whiteSpace: 'pre-wrap', color: 'var(--c-text)' }}>
             {this.state.error && this.state.error.toString()}
             <br />
             {this.state.errorInfo && this.state.errorInfo.componentStack}
@@ -52,7 +52,7 @@ function RequireAuth({ children }) {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking session...</div>;
+    return <div className="min-h-screen bg-[var(--bg-base)] text-[var(--c-text-muted)] flex items-center justify-center">Checking session...</div>;
   }
 
   if (!isAuthenticated) {
@@ -67,7 +67,7 @@ function RequireAdmin({ children }) {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking access...</div>;
+    return <div className="min-h-screen bg-[var(--bg-base)] text-[var(--c-text-muted)] flex items-center justify-center">Checking access...</div>;
   }
 
   if (!isAuthenticated) {
@@ -86,7 +86,7 @@ function RequireApprovedClient({ children }) {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking approval...</div>;
+    return <div className="min-h-screen bg-[var(--bg-base)] text-[var(--c-text-muted)] flex items-center justify-center">Checking approval...</div>;
   }
 
   if (!isAuthenticated) {
@@ -104,7 +104,7 @@ function RequireTierFeature({ feature, children }) {
   const { isLoading, isAuthenticated, isAdmin, hasFeature } = useAuth();
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#0f1419] text-gray-300 flex items-center justify-center">Checking access...</div>;
+    return <div className="min-h-screen bg-[var(--bg-base)] text-[var(--c-text-muted)] flex items-center justify-center">Checking access...</div>;
   }
 
   if (!isAuthenticated) {

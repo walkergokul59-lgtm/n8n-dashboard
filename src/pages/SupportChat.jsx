@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded grays with CSS vars, StatusBadge icons 14px, consistent typography */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -45,13 +46,13 @@ function StatusBadge({ status }) {
     const isOpen = status === 'open';
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-semibold ${
                 isOpen
-                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    ? 'border-[var(--c-warning)]/30 bg-[var(--c-warning-bg)] text-[var(--c-warning-text)]'
+                    : 'border-[var(--c-success)]/30 bg-[var(--c-success-bg)] text-[var(--c-success-text)]'
             }`}
         >
-            {isOpen ? <Clock3 size={13} /> : <CheckCircle2 size={13} />}
+            {isOpen ? <Clock3 size={14} /> : <CheckCircle2 size={14} />}
             {isOpen ? 'Open' : 'Closed'}
         </span>
     );
@@ -62,20 +63,20 @@ function TicketListItem({ ticket, isActive, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+            className={`w-full rounded-[8px] border px-4 py-3 text-left transition ${
                 isActive
                     ? 'border-[var(--c-accent)]/60 bg-[var(--c-accent)]/10'
-                    : 'border-[var(--c-border-light)] bg-[var(--c-bg)] hover:border-[var(--c-accent)]/40'
+                    : 'border-[var(--c-border)] bg-[var(--bg-base)] hover:border-[var(--c-accent)]/40'
             }`}
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[var(--c-text)]">{ticket.subject}</p>
-                    <p className="mt-1 text-xs text-gray-400">{ticket.id}</p>
+                    <p className="truncate text-[14px] font-semibold text-[var(--c-text)]">{ticket.subject}</p>
+                    <p className="mt-1 text-[12px] text-[var(--c-text-muted)]">{ticket.id}</p>
                 </div>
                 <StatusBadge status={ticket.status} />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-gray-400">
+            <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-[var(--c-text-muted)]">
                 <span className="truncate">{ticket.clientName || ticket.clientEmail || 'Client'}</span>
                 <span>{formatDateTime(ticket.updatedAt)}</span>
             </div>
@@ -313,17 +314,20 @@ export default function SupportChat() {
     const showCreatePanel = canCreateTicket && !ticketId && !isListLoading;
     const showLoadingPanel = isListLoading && !ticketId;
 
+    const inputClass = "w-full rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 h-9 text-[14px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)] focus:ring-2 focus:ring-[var(--c-accent)]/20";
+    const textareaClass = "w-full rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3 text-[14px] text-[var(--c-text)] outline-none focus:border-[var(--c-accent)] focus:ring-2 focus:ring-[var(--c-accent)]/20";
+
     return (
         <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] pb-10">
             <aside className="space-y-5">
-                <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 p-5">
+                <div className="rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] p-5">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--c-accent)]/15 text-[var(--c-accent)]">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[var(--c-accent)]/15 text-[var(--c-accent)]">
                             <LifeBuoy size={20} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-[var(--c-text)]">Support Chat</h2>
-                            <p className="text-sm text-gray-400">
+                            <h2 className="text-[16px] font-semibold text-[var(--c-text)]">Support Chat</h2>
+                            <p className="text-[14px] text-[var(--c-text-muted)]">
                                 {isAdmin
                                     ? 'Review, reply to, and resolve client tickets.'
                                     : 'Create one open ticket at a time and chat with support.'}
@@ -332,7 +336,7 @@ export default function SupportChat() {
                     </div>
 
                     {!isAdmin ? (
-                        <div className="mt-4 rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3 text-sm text-gray-300">
+                        <div className="mt-4 rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3 text-[14px] text-[var(--c-text-dim)]">
                             {hasOpenTicket
                                 ? 'You already have an open support ticket.'
                                 : 'No open ticket right now. You can create a new one.'}
@@ -340,13 +344,13 @@ export default function SupportChat() {
                     ) : null}
                 </div>
 
-                <div className="rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 p-4">
+                <div className="rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] p-4">
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-sm font-semibold text-[var(--c-text)]">
+                            <h3 className="text-[14px] font-semibold text-[var(--c-text)]">
                                 {isAdmin ? 'Ticket Queue' : 'Your Tickets'}
                             </h3>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-[12px] text-[var(--c-text-muted)]">
                                 {isAdmin ? 'Open tickets are pinned first.' : 'Closed tickets stay available in history.'}
                             </p>
                         </div>
@@ -354,7 +358,7 @@ export default function SupportChat() {
                             <button
                                 type="button"
                                 onClick={() => navigate('/support')}
-                                className="inline-flex items-center gap-1 rounded-md border border-[var(--c-accent)]/40 bg-[var(--c-accent)]/10 px-3 py-1.5 text-xs font-semibold text-[var(--c-accent)]"
+                                className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--c-accent)]/40 bg-[var(--c-accent)]/10 px-3 h-8 text-[12px] font-semibold text-[var(--c-accent)]"
                             >
                                 <Plus size={14} />
                                 New Ticket
@@ -369,10 +373,10 @@ export default function SupportChat() {
                                     key={filter}
                                     type="button"
                                     onClick={() => setStatusFilter(filter)}
-                                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                                    className={`rounded-[6px] px-3 h-8 text-[12px] font-semibold transition ${
                                         statusFilter === filter
-                                            ? 'bg-[var(--c-accent)] text-[var(--c-bg)]'
-                                            : 'bg-[var(--c-bg)] text-gray-400 hover:text-[var(--c-text)]'
+                                            ? 'bg-[var(--c-accent)] text-white'
+                                            : 'bg-[var(--bg-base)] text-[var(--c-text-muted)] hover:text-[var(--c-text)]'
                                     }`}
                                 >
                                     {filter === 'all' ? 'All' : filter[0].toUpperCase() + filter.slice(1)}
@@ -382,15 +386,15 @@ export default function SupportChat() {
                     ) : null}
 
                     {listError ? (
-                        <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                        <div className="mb-4 rounded-[6px] border border-[var(--c-error)]/30 bg-[var(--c-error-bg)] px-3 py-2 text-[14px] text-[var(--c-error-text)]">
                             {listError}
                         </div>
                     ) : null}
 
                     {isListLoading ? (
-                        <p className="text-sm text-gray-400">Loading tickets...</p>
+                        <p className="text-[14px] text-[var(--c-text-muted)]">Loading tickets...</p>
                     ) : visibleTickets.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--c-border-light)] px-4 py-8 text-center text-sm text-gray-400">
+                        <div className="rounded-[6px] border border-dashed border-[var(--c-border)] px-4 py-8 text-center text-[14px] text-[var(--c-text-muted)]">
                             {isAdmin ? 'No support tickets match this filter.' : 'No support tickets yet.'}
                         </div>
                     ) : (
@@ -408,34 +412,34 @@ export default function SupportChat() {
                 </div>
             </aside>
 
-            <section className="min-w-0 rounded-xl border border-[var(--c-border-light)] bg-[var(--c-surface)]/80 overflow-hidden">
+            <section className="min-w-0 rounded-[8px] border border-[var(--c-border)] bg-[var(--bg-surface)] overflow-hidden">
                 {showLoadingPanel ? (
-                    <div className="flex min-h-[640px] items-center justify-center px-6 py-10 text-center text-sm text-gray-400">
+                    <div className="flex min-h-[640px] items-center justify-center px-6 py-10 text-center text-[14px] text-[var(--c-text-muted)]">
                         Loading support workspace...
                     </div>
                 ) : showCreatePanel ? (
                     <div className="space-y-6 p-6">
                         <div>
-                            <h3 className="text-xl font-bold text-[var(--c-text)]">Create a Support Ticket</h3>
-                            <p className="mt-1 text-sm text-gray-400">
+                            <h3 className="text-[20px] font-semibold text-[var(--c-text)]">Create a Support Ticket</h3>
+                            <p className="mt-1 text-[14px] text-[var(--c-text-muted)]">
                                 Describe the issue clearly. The admin will receive an email with a direct link to your chat thread.
                             </p>
                         </div>
 
                         {detailError ? (
-                            <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                            <div className="rounded-[6px] border border-[var(--c-error)]/30 bg-[var(--c-error-bg)] px-4 py-3 text-[14px] text-[var(--c-error-text)]">
                                 {detailError}
                             </div>
                         ) : null}
                         {actionMessage ? (
-                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                            <div className="rounded-[6px] border border-[var(--c-success)]/30 bg-[var(--c-success-bg)] px-4 py-3 text-[14px] text-[var(--c-success-text)]">
                                 {actionMessage}
                             </div>
                         ) : null}
 
                         <form onSubmit={handleCreateTicket} className="space-y-5">
                             <label className="block space-y-2">
-                                <span className="text-sm font-medium text-[var(--c-text-dim)]">Subject *</span>
+                                <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Subject *</span>
                                 <input
                                     type="text"
                                     required
@@ -443,12 +447,12 @@ export default function SupportChat() {
                                     value={newSubject}
                                     onChange={(event) => setNewSubject(event.target.value)}
                                     placeholder="Brief summary of the issue"
-                                    className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-2.5 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                    className={inputClass}
                                 />
                             </label>
 
                             <label className="block space-y-2">
-                                <span className="text-sm font-medium text-[var(--c-text-dim)]">Message *</span>
+                                <span className="text-[13px] font-medium text-[var(--c-text-dim)]">Message *</span>
                                 <textarea
                                     required
                                     rows={8}
@@ -456,14 +460,14 @@ export default function SupportChat() {
                                     value={newMessage}
                                     onChange={(event) => setNewMessage(event.target.value)}
                                     placeholder="Explain what is happening, what you expected, and any relevant context."
-                                    className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                    className={textareaClass}
                                 />
                             </label>
 
                             <button
                                 type="submit"
                                 disabled={isCreatingTicket}
-                                className="inline-flex items-center gap-2 rounded-lg bg-[var(--c-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2 rounded-[6px] bg-[var(--c-accent)] px-4 h-9 text-[14px] font-semibold text-white transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <Send size={16} />
                                 {isCreatingTicket ? 'Creating...' : 'Create Ticket'}
@@ -472,16 +476,16 @@ export default function SupportChat() {
                     </div>
                 ) : ticketId ? (
                     <div className="flex h-full min-h-[640px] flex-col">
-                        <div className="border-b border-[var(--c-border-light)] px-6 py-5">
+                        <div className="border-b border-[var(--c-border)] px-6 py-5">
                             <div className="flex flex-wrap items-start justify-between gap-4">
                                 <div>
                                     <div className="flex flex-wrap items-center gap-3">
-                                        <h3 className="text-xl font-bold text-[var(--c-text)]">
+                                        <h3 className="text-[20px] font-semibold text-[var(--c-text)]">
                                             {selectedTicket?.subject || 'Support Ticket'}
                                         </h3>
                                         {selectedTicket ? <StatusBadge status={selectedTicket.status} /> : null}
                                     </div>
-                                    <p className="mt-2 text-sm text-gray-400">
+                                    <p className="mt-2 text-[14px] text-[var(--c-text-muted)]">
                                         {selectedTicket?.id || ticketId}
                                     </p>
                                 </div>
@@ -491,7 +495,7 @@ export default function SupportChat() {
                                         type="button"
                                         onClick={handleCloseTicket}
                                         disabled={isClosingTicket}
-                                        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="rounded-[6px] border border-[var(--c-success)]/30 bg-[var(--c-success-bg)] px-4 h-9 text-[14px] font-semibold text-[var(--c-success-text)] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {isClosingTicket ? 'Closing...' : 'Close Ticket'}
                                     </button>
@@ -500,40 +504,40 @@ export default function SupportChat() {
 
                             {selectedTicket ? (
                                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3">
-                                        <p className="text-xs uppercase tracking-wider text-gray-500">Created</p>
-                                        <p className="mt-1 text-sm text-[var(--c-text)]">{formatDateTime(selectedTicket.createdAt)}</p>
+                                    <div className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3">
+                                        <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-subtle)]">Created</p>
+                                        <p className="mt-1 text-[14px] text-[var(--c-text)]">{formatDateTime(selectedTicket.createdAt)}</p>
                                     </div>
-                                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3">
-                                        <p className="text-xs uppercase tracking-wider text-gray-500">Last Activity</p>
-                                        <p className="mt-1 text-sm text-[var(--c-text)]">{formatDateTime(selectedTicket.updatedAt)}</p>
+                                    <div className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3">
+                                        <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-subtle)]">Last Activity</p>
+                                        <p className="mt-1 text-[14px] text-[var(--c-text)]">{formatDateTime(selectedTicket.updatedAt)}</p>
                                     </div>
-                                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3">
-                                        <p className="text-xs uppercase tracking-wider text-gray-500">Client</p>
-                                        <p className="mt-1 text-sm text-[var(--c-text)]">{selectedTicket.clientName || 'Client'}</p>
+                                    <div className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3">
+                                        <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-subtle)]">Client</p>
+                                        <p className="mt-1 text-[14px] text-[var(--c-text)]">{selectedTicket.clientName || 'Client'}</p>
                                     </div>
-                                    <div className="rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3">
-                                        <p className="text-xs uppercase tracking-wider text-gray-500">Email</p>
-                                        <p className="mt-1 text-sm text-[var(--c-text)]">{selectedTicket.clientEmail || 'Not available'}</p>
+                                    <div className="rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-3 py-3">
+                                        <p className="text-[12px] uppercase tracking-wider text-[var(--c-text-subtle)]">Email</p>
+                                        <p className="mt-1 text-[14px] text-[var(--c-text)]">{selectedTicket.clientEmail || 'Not available'}</p>
                                     </div>
                                 </div>
                             ) : null}
 
                             {detailError ? (
-                                <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                                <div className="mt-4 rounded-[6px] border border-[var(--c-error)]/30 bg-[var(--c-error-bg)] px-4 py-3 text-[14px] text-[var(--c-error-text)]">
                                     {detailError}
                                 </div>
                             ) : null}
                             {actionMessage ? (
-                                <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                                <div className="mt-4 rounded-[6px] border border-[var(--c-success)]/30 bg-[var(--c-success-bg)] px-4 py-3 text-[14px] text-[var(--c-success-text)]">
                                     {actionMessage}
                                 </div>
                             ) : null}
                         </div>
 
-                        <div className="flex-1 space-y-4 overflow-auto bg-[var(--c-bg)]/40 px-6 py-6">
+                        <div className="flex-1 space-y-4 overflow-auto bg-[var(--bg-base)]/40 px-6 py-6">
                             {isTicketLoading && !selectedTicket ? (
-                                <p className="text-sm text-gray-400">Loading ticket...</p>
+                                <p className="text-[14px] text-[var(--c-text-muted)]">Loading ticket...</p>
                             ) : selectedTicket?.messages?.length ? (
                                 selectedTicket.messages.map((message) => {
                                     const isAdminMessage = message.authorRole === 'admin';
@@ -543,7 +547,7 @@ export default function SupportChat() {
                                             className={`flex gap-3 ${isAdminMessage ? 'justify-end' : 'justify-start'}`}
                                         >
                                             {!isAdminMessage ? (
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--c-border-light)] bg-[var(--c-surface)] text-gray-300">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-[var(--bg-surface)] text-[var(--c-text-dim)]">
                                                     <User size={16} />
                                                 </div>
                                             ) : null}
@@ -552,14 +556,14 @@ export default function SupportChat() {
                                                 className={`max-w-[min(720px,100%)] rounded-2xl border px-4 py-3 shadow-sm ${
                                                     isAdminMessage
                                                         ? 'border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10 text-[var(--c-text)]'
-                                                        : 'border-[var(--c-border-light)] bg-[var(--c-surface)] text-[var(--c-text)]'
+                                                        : 'border-[var(--c-border)] bg-[var(--bg-surface)] text-[var(--c-text)]'
                                                 }`}
                                             >
-                                                <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                                                <div className="mb-2 flex flex-wrap items-center gap-2 text-[12px]">
                                                     <span className="font-semibold text-[var(--c-text-dim)]">{message.authorLabel || 'Support'}</span>
-                                                    <span className="text-gray-500">{formatDateTime(message.createdAt)}</span>
+                                                    <span className="text-[var(--c-text-subtle)]">{formatDateTime(message.createdAt)}</span>
                                                 </div>
-                                                <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
+                                                <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{message.body}</p>
                                             </div>
 
                                             {isAdminMessage ? (
@@ -571,15 +575,15 @@ export default function SupportChat() {
                                     );
                                 })
                             ) : (
-                                <div className="rounded-lg border border-dashed border-[var(--c-border-light)] px-4 py-10 text-center text-sm text-gray-400">
+                                <div className="rounded-[6px] border border-dashed border-[var(--c-border)] px-4 py-10 text-center text-[14px] text-[var(--c-text-muted)]">
                                     No messages yet.
                                 </div>
                             )}
                         </div>
 
-                        <div className="border-t border-[var(--c-border-light)] bg-[var(--c-surface)] px-6 py-5">
+                        <div className="border-t border-[var(--c-border)] bg-[var(--bg-surface)] px-6 py-5">
                             {!canReply ? (
-                                <div className="flex items-center gap-2 rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-4 py-3 text-sm text-gray-400">
+                                <div className="flex items-center gap-2 rounded-[6px] border border-[var(--c-border)] bg-[var(--bg-base)] px-4 py-3 text-[14px] text-[var(--c-text-muted)]">
                                     <AlertCircle size={16} />
                                     This ticket is closed. New messages are disabled.
                                 </div>
@@ -592,16 +596,16 @@ export default function SupportChat() {
                                         value={replyMessage}
                                         onChange={(event) => setReplyMessage(event.target.value)}
                                         placeholder={isAdmin ? 'Reply to the client...' : 'Add more details for support...'}
-                                        className="w-full rounded-lg border border-[var(--c-border-light)] bg-[var(--c-bg)] px-3 py-3 text-sm text-[var(--c-text)] outline-none focus:border-[var(--c-accent)]/80"
+                                        className={textareaClass}
                                     />
                                     <div className="flex items-center justify-between gap-3">
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-[12px] text-[var(--c-text-subtle)]">
                                             Messages update automatically every few seconds.
                                         </p>
                                         <button
                                             type="submit"
                                             disabled={isSendingReply}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-[var(--c-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--c-bg)] transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="inline-flex items-center gap-2 rounded-[6px] bg-[var(--c-accent)] px-4 h-9 text-[14px] font-semibold text-white transition hover:bg-[var(--c-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             <Send size={16} />
                                             {isSendingReply ? 'Sending...' : 'Send Reply'}
@@ -617,10 +621,10 @@ export default function SupportChat() {
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--c-accent)]/10 text-[var(--c-accent)]">
                                 <MessageSquare size={24} />
                             </div>
-                            <h3 className="mt-5 text-xl font-bold text-[var(--c-text)]">
+                            <h3 className="mt-5 text-[20px] font-semibold text-[var(--c-text)]">
                                 {isAdmin ? 'Select a ticket' : 'Open a ticket from the list'}
                             </h3>
-                            <p className="mt-2 text-sm text-gray-400">
+                            <p className="mt-2 text-[14px] text-[var(--c-text-muted)]">
                                 {isAdmin
                                     ? 'Choose a client ticket from the queue to open the support chat and resolve the issue.'
                                     : 'Pick one of your previous tickets from the left, or create a new one if nothing is open.'}

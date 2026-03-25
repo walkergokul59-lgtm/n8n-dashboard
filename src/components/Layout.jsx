@@ -1,3 +1,4 @@
+/* UI redesign: replaced hardcoded grays with CSS vars */
 import { useRef, useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
@@ -31,17 +32,17 @@ export function Layout() {
 
     if (!isProfileReady) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background font-sans text-foreground">
+            <div className="flex h-screen w-full items-center justify-center bg-[var(--bg-base)] font-sans text-[var(--c-text)]">
                 <div className="text-center space-y-3">
                     <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--c-accent)]/30 border-t-[var(--c-accent)]" />
-                    <p className="text-sm text-gray-400">Loading your workspace...</p>
+                    <p className="text-[14px] text-[var(--c-text-muted)]">Loading your workspace...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="relative flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
+        <div className="relative flex h-screen w-full overflow-hidden bg-[var(--bg-base)] font-sans text-[var(--c-text)]">
             {theme === 'dark' && (
                 <div className="pointer-events-none absolute inset-0 z-0">
                     <LightPillar
